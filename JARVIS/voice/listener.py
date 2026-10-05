@@ -13,6 +13,7 @@ import time
 from dataclasses import dataclass
 from typing import Callable, Optional
 
+from config.settings import settings
 from voice.speech_to_text import get_stt_provider
 from voice.microphone import microphone_coordinator
 from core.performance import current_trace
