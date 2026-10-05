@@ -22,8 +22,12 @@ if [[ -z "$PYTHON_BIN" ]]; then
 fi
 echo "[OK] $($PYTHON_BIN --version)"
 PY_MINOR="$($PYTHON_BIN -c 'import sys; print(sys.version_info.minor)')"
+if (( PY_MINOR >= 12 )); then
+  echo "[INFO] Python 3.$PY_MINOR: openWakeWord acústico será pulado no Linux porque tflite-runtime só tem wheels até Python 3.11."
+  echo "[INFO] O JARVIS continuará reconhecendo 'Jarvis' via STT com WAKE_WORD_ENGINE=auto."
+fi
 if (( PY_MINOR > 13 )); then
-  echo "[AVISO] Python 3.$PY_MINOR é muito recente para algumas bibliotecas de áudio. Se o pip falhar, use Python 3.12 ou 3.13 para criar .venv."
+  echo "[AVISO] Python 3.$PY_MINOR é muito recente para algumas bibliotecas de áudio. Se outra dependência falhar, Python 3.11 é a opção mais compatível."
 fi
 
 if ! "$PYTHON_BIN" -c 'import venv' >/dev/null 2>&1; then
