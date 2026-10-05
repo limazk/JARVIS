@@ -37,23 +37,46 @@ class BackgroundRuntime:
         if settings.voice_enabled:
             speak(text, blocking=True)
 
-    def _on_wake(self) -> None:
+    def _on_wake(self, prefilled_command: str | None = None) -> None:
         if not self._handling.acquire(blocking=False):
             return
         trace = PerformanceTrace()
         try:
-            self._speak("Estou ouvindo.")
             with request_trace(trace):
-                trace.mark_elapsed("wake_to_stt")
-                threading.Thread(target=self._prefetch_rotina_health, daemon=True,
-                                 name="jarvis-rotina-prefetch").start()
-                text = listener.listen_once(phrase_time_limit=10)
+                threading.Thread(
+                    target=self._prefetch_rotina_health,
+                    daemon=True,
+                    name="jarvis-rotina-prefetch",
+                ).start()
+
+                # No fallback por STT, "Jarvis, quanto ganhei essa semana?"
+                # já chega aqui com o restante da frase em prefilled_command.
+                # Processamos direto: não falamos por cima do usuário e não
+                # abrimos o microfone uma segunda vez, evitando perder o começo.
+                text = (prefilled_command or "").strip()
+
                 if not text:
-                    logger.info("Wake word detectada, mas nenhum comando foi transcrito.")
+                    # Quando o usuário falou apenas "Jarvis", damos uma
+                    # confirmação curta e só então capturamos o comando.
+                    # "Sim?" termina bem mais rápido que "Estou ouvindo." e
+                    # reduz a janela em que o começo da pergunta podia sumir.
+                    self._speak(settings.wake_greeting.strip() or "Sim?")
+                    trace.mark_elapsed("wake_to_stt")
+                    text = listener.listen_once(
+                        phrase_time_limit=settings.wake_command_phrase_time_limit
+                    )
+
+                if not text:
+                    logger.info(
+                        "Wake word detectada, mas nenhum comando foi transcrito."
+                    )
                     return
+
                 logger.info("Comando de voz transcrito; iniciando agente.")
                 if self.agent is not None:
-                    self._speak(self.agent.process(text, response_mode="voice"))
+                    self._speak(
+                        self.agent.process(text, response_mode="voice")
+                    )
         finally:
             trace.log()
             self._handling.release()
