@@ -1,0 +1,15 @@
+[Unit]
+Description=JARVIS Personal Assistant
+After=default.target network-online.target sound.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory="@PROJECT_DIR@"
+ExecStart="@PYTHON@" "@PROJECT_DIR@/main.py" --background
+Environment=PYTHONUNBUFFERED=1
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

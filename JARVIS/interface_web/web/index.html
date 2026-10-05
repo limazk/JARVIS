@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Jarvis</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div id="app">
+
+  <!-- ===================== cabeçalho HUD ===================== -->
+  <div id="hud-topbar">
+    <div class="hud-brand">
+      <img src="../../assets/logo_mark.png" alt="" onerror="this.style.display='none'" />
+      <div class="hud-brand-text">
+        <div class="name">JARVIS</div>
+        <div class="sub uc">Sistema assistente de IA</div>
+      </div>
+    </div>
+
+    <div class="hud-breadcrumb uc" id="hud-breadcrumb">
+      <span>PAINEL</span>
+      <span class="sep">///</span>
+      <span>DIAGNÓSTICO DO SISTEMA</span>
+      <span class="sep">|</span>
+      <span class="step now">OBSERVAR</span>
+      <span class="sep">&gt;</span>
+      <span class="step">ANALISAR</span>
+      <span class="sep">&gt;</span>
+      <span class="step">OTIMIZAR</span>
+      <span class="sep">&gt;</span>
+      <span class="step">EVOLUIR</span>
+    </div>
+
+    <div class="hud-right">
+      <div class="hud-clock">
+        <div class="date uc" id="hud-date">--</div>
+        <div class="time" id="hud-time">--:--:--</div>
+      </div>
+      <div class="hud-status">
+        <div class="label uc">Status do sistema</div>
+        <div class="value"><span class="status-dot" id="status-dot"></span><span id="status-label">ONLINE</span></div>
+      </div>
+      <div class="hud-tagline uc">Inteligência a serviço<br />do seu dia a dia</div>
+    </div>
+  </div>
+
+  <!-- ===================== corpo ===================== -->
+  <div id="hud-body">
+
+    <!-- barra lateral -->
+    <div id="sidebar">
+      <div class="nav-item active" data-page="overview">
+        <div class="icon-box">◈</div>
+        <span class="uc">Visão geral</span>
+      </div>
+      <div class="nav-item" data-page="chat">
+        <div class="icon-box">▤</div>
+        <span class="uc">Conversa</span>
+        <span class="nav-badge" id="chat-badge"></span>
+      </div>
+      <div class="sidebar-footer nav-item" id="settings-btn">
+        <div class="icon-box">⚙</div>
+        <span class="uc">Config</span>
+      </div>
+    </div>
+
+    <!-- conteúdo -->
+    <div id="content">
+
+      <!-- ---------- página: Visão geral ---------- -->
+      <div class="page active" id="page-overview">
+        <div class="overview-grid">
+
+          <!-- coluna esquerda -->
+          <div class="grid-col">
+            <div class="panel">
+              <div class="panel-head">
+                <div class="panel-title"><span class="dot"></span><span class="uc">Monitor de desempenho</span></div>
+                <span class="panel-expand">⤢</span>
+              </div>
+              <div class="panel-body">
+                <div class="metric-row">
+                  <div class="metric">
+                    <span class="metric-label uc">CPU</span>
+                    <span class="metric-value" id="m-cpu">--%</span>
+                    <div class="segbar" id="seg-cpu"></div>
+                  </div>
+                  <div class="metric">
+                    <span class="metric-label uc">Memória</span>
+                    <span class="metric-value" id="m-ram">--%</span>
+                    <div class="segbar" id="seg-ram"></div>
+                  </div>
+                  <div class="metric">
+                    <span class="metric-label uc">Disco</span>
+                    <span class="metric-value" id="m-disco">--%</span>
+                    <div class="segbar" id="seg-disco"></div>
+                  </div>
+                </div>
+                <canvas class="chart" id="chart-metrics"></canvas>
+                <div class="chart-legend">
+                  <span class="item"><span class="swatch" style="background:#b891f8"></span>CPU</span>
+                  <span class="item"><span class="swatch" style="background:#6232dd"></span>MEMÓRIA</span>
+                  <span class="item"><span class="swatch" style="background:#8b84a3"></span>DISCO</span>
+                  <span class="live-tag"><span class="dot"></span>AO VIVO</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-head">
+                <div class="panel-title"><span class="dot"></span><span class="uc">Diagnóstico de memória</span></div>
+                <span class="panel-expand">⤢</span>
+              </div>
+              <div class="panel-body">
+                <div class="mem-headline">
+                  <span class="used" id="mem-used">-- GB</span>
+                  <span class="total">/ <span id="mem-total">-- GB</span></span>
+                  <span class="pct" id="mem-pct">--%</span>
+                </div>
+                <div class="bigbar"><div class="fill" id="mem-bar" style="width:0%"></div></div>
+                <canvas class="waveform" id="mem-wave"></canvas>
+                <div class="mem-breakdown">
+                  <div><span>Em uso</span><span class="v" id="mem-b-used">-- GB</span></div>
+                  <div><span>Disponível</span><span class="v" id="mem-b-avail">-- GB</span></div>
+                  <div><span>Total instalado</span><span class="v" id="mem-b-total">-- GB</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel activity-panel" style="flex:1; min-height:0;">
+              <div class="panel-head">
+                <div class="panel-title"><span class="dot"></span><span class="uc">Atividade de processos</span></div>
+                <span class="panel-expand">⤢</span>
+              </div>
+              <div class="panel-body" style="flex:1; min-height:0; display:flex; flex-direction:column; overflow-y:auto;">
+                <table class="proc-table">
+                  <thead>
+                    <tr><th class="uc">Processo</th><th class="uc">CPU</th><th class="uc">Mem</th><th class="uc">Status</th></tr>
+                  </thead>
+                  <tbody id="proc-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- coluna central: núcleo -->
+          <div class="grid-col center">
+            <div class="panel core-panel">
+              <div class="core-head">
+                <div>
+                  <div class="title">JARVIS CORE</div>
+                  <div class="sub uc" id="core-sub">ARQUITETURA NEURAL ONLINE</div>
+                </div>
+                <div class="tag uc">// NÚCLEO</div>
+              </div>
+              <div class="core-orb-area">
+                <canvas id="orb-overview" width="440" height="440"></canvas>
+                <div class="core-side-status uc">
+                  <span id="core-flag-1">SINCRONIZADO</span>
+                  <span id="core-flag-2">ESTÁVEL</span>
+                  <span id="core-flag-3">ÓTIMO</span>
+                </div>
+                <div class="core-side-labels uc">
+                  <span>NLP</span>
+                  <span>VOZ</span>
+                  <span>MEMÓRIA</span>
+                  <span>FERRAMENTAS</span>
+                  <span>AUTOMAÇÃO</span>
+                </div>
+              </div>
+              <div class="core-tagline uc" id="core-tagline">Inteligência a serviço do progresso</div>
+              <div class="core-stats-row">
+                <div class="core-stat"><div class="value" id="core-stat-modules">--</div><div class="label uc">Módulos ativos</div></div>
+                <div class="core-stat"><div class="value" id="core-stat-uptime">--</div><div class="label uc">Disponibilidade</div></div>
+                <div class="core-stat"><div class="value" id="core-stat-msgs">--</div><div class="label uc">Mensagens</div></div>
+                <div class="core-stat"><div class="value" id="core-stat-clock">--:--</div><div class="label uc">Hora local</div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- coluna direita -->
+          <div class="grid-col">
+            <div class="panel">
+              <div class="panel-head">
+                <div class="panel-title"><span class="dot"></span><span class="uc">Saúde do sistema</span></div>
+                <span class="panel-expand">⤢</span>
+              </div>
+              <div class="panel-body" id="health-list"></div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-head">
+                <div class="panel-title"><span class="dot"></span><span class="uc">Status dos módulos</span></div>
+                <span class="panel-expand">⤢</span>
+              </div>
+              <div class="panel-body" id="module-list"></div>
+            </div>
+
+            <div class="panel" style="flex:1; min-height:0; display:flex; flex-direction:column;">
+              <div class="panel-head">
+                <div class="panel-title"><span class="dot"></span><span class="uc">Atividade recente</span></div>
+                <span class="panel-expand">⤢</span>
+              </div>
+              <div class="panel-body activity-panel" style="flex:1; min-height:0;">
+                <div class="activity-list" id="activity-list"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- linha inferior -->
+        <div class="bottom-row">
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title"><span class="dot"></span><span class="uc">Automação</span></div>
+              <span class="panel-expand">⤢</span>
+            </div>
+            <div class="panel-body">
+              <div class="automation-row">
+                <div>
+                  <div class="automation-label">Voz contínua</div>
+                  <div class="automation-sub" id="wake-word-sub">diga "jarvis" a qualquer momento</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="voice-toggle" />
+                  <span class="track"></span>
+                  <span class="thumb"></span>
+                </label>
+              </div>
+              <div class="automation-row" id="autostart-row" style="display:none">
+                <div>
+                  <div class="automation-label">Iniciar com o Windows</div>
+                  <div class="automation-sub">abre minimizado na bandeja</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="autostart-toggle" />
+                  <span class="track"></span>
+                  <span class="thumb"></span>
+                </label>
+              </div>
+              <div class="tray-note" id="tray-note"></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title"><span class="dot"></span><span class="uc">Tráfego de rede</span></div>
+              <span class="panel-expand">⤢</span>
+            </div>
+            <div class="panel-body">
+              <div class="net-summary">
+                <span class="in uc">↓ recebendo <b id="net-recv">-- KB/s</b></span>
+                <span class="out uc">↑ enviando <b id="net-sent">-- KB/s</b></span>
+              </div>
+              <canvas class="net-chart" id="net-chart"></canvas>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title"><span class="dot"></span><span class="uc">Armazenamento</span></div>
+              <span class="panel-expand">⤢</span>
+            </div>
+            <div class="panel-body">
+              <div class="storage-headline">
+                <span id="storage-used">-- GB</span> / <span id="storage-total">-- GB</span>
+                <span class="pct" id="storage-pct">--%</span>
+              </div>
+              <div class="storage-body">
+                <div class="storage-list">
+                  <div class="row"><span class="swatch" style="background:#6232dd"></span>Usado<span class="v" id="storage-row-used">--</span></div>
+                  <div class="row"><span class="swatch" style="background:#252530"></span>Livre<span class="v" id="storage-row-free">--</span></div>
+                </div>
+                <canvas class="donut" id="storage-donut" width="92" height="92"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------- página: Conversa ---------- -->
+      <div class="page" id="page-chat">
+        <div class="chat-orb-col panel">
+          <div class="panel-head">
+            <div class="panel-title"><span class="dot"></span><span class="uc">Jarvis Core</span></div>
+          </div>
+          <div class="chat-orb-body">
+            <canvas id="orb-chat" width="180" height="180"></canvas>
+            <div class="state-label uc" id="chat-state-label">ONLINE</div>
+          </div>
+        </div>
+
+        <div class="chat-main panel">
+          <div class="panel-head">
+            <div class="panel-title"><span class="dot"></span><span class="uc">Conversa</span></div>
+          </div>
+          <div class="panel-body" style="flex:1; min-height:0; display:flex; flex-direction:column;">
+            <div class="chat-messages" id="chat-messages"></div>
+            <div class="chat-input-row">
+              <button class="icon-btn" id="mic-btn" title="Falar">🎤</button>
+              <input type="text" id="chat-input" placeholder="Digite uma mensagem..." autocomplete="off" />
+              <button class="icon-btn primary" id="send-btn" title="Enviar">➤</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== rodapé HUD ===================== -->
+  <div id="hud-footer">
+    <div class="footer-left"><span class="dot"></span><span id="footer-status">TODOS OS SISTEMAS OPERACIONAIS</span></div>
+    <div class="footer-center uc">Sintetizando conhecimento. Ampliando seu potencial.</div>
+    <div class="footer-right uc">
+      <span>JARVIS v1.0</span>
+      <span>MODO SEGURO</span>
+      <span>100% LOCAL</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== modal: confirmação de ação ===================== -->
+<div class="overlay" id="confirm-overlay">
+  <div class="modal">
+    <h2>Confirmação necessária</h2>
+    <p class="confirm-message" id="confirm-message"></p>
+    <div class="modal-actions">
+      <button class="btn" id="confirm-cancel">Cancelar</button>
+      <button class="btn primary" id="confirm-ok">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== modal: configurar IA ===================== -->
+<div class="overlay" id="settings-overlay">
+  <div class="modal">
+    <h2>Configurar IA do Jarvis</h2>
+    <p class="sub">
+      Sem isso, o Jarvis funciona só com comandos diretos (sem conversa livre).
+      Você pode trocar isso depois a qualquer momento.
+    </p>
+    <div id="provider-list"></div>
+    <div class="modal-hint" id="provider-hint"></div>
+    <div class="field">
+      <input type="password" id="api-key-input" placeholder="Cole sua chave de API aqui" />
+    </div>
+    <div class="modal-status" id="settings-status"></div>
+    <div class="modal-actions">
+      <button class="btn" id="settings-cancel">Agora não</button>
+      <button class="btn primary" id="settings-save">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

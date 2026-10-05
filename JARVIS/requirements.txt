@@ -1,0 +1,105 @@
+# ===== ETAPA 2 — Core =====
+python-dotenv==1.0.1
+anthropic==0.39.0
+openai==1.55.0
+requests==2.32.3
+
+# Monitoramento e controle do Windows
+psutil==6.1.0
+pycaw==20240210; sys_platform == "win32"
+comtypes==1.4.6; sys_platform == "win32"
+
+# ===== ETAPA 3 — Ferramentas =====
+pyperclip==1.9.0                # clipboard
+pillow>=12.3.0                  # screenshot (não fixamos numa versão antiga —
+                                 # versões novas do Pillow saem com instalador
+                                 # pronto pra versões novas do Python bem mais
+                                 # rápido; veja o aviso sobre a versão do
+                                 # Python recomendada no README)
+duckduckgo-search==6.3.5        # busca na web
+# win11toast depende de "winsdk" por baixo dos panos, que hoje só tem
+# instalador pronto até Python 3.12 (nenhuma versão dele, nem a mais nova,
+# resolve isso sozinha) — é o principal motivo de recomendarmos Python 3.12
+# pra este projeto no README, em vez de uma versão mais nova do Python.
+win11toast==0.35; sys_platform == "win32"   # notificações nativas
+
+# ===== ETAPA 5 — Voz =====
+# 3.10.4 tenta importar o módulo "distutils" (removido do Python a partir da
+# versão 3.12) só pra checar a versão do pyaudio instalado — quebra o
+# microfone inteiro com "No module named 'distutils'" nessas versões. Corrigido
+# a partir da 3.11.0 (removeram esse import).
+SpeechRecognition>=3.11.0       # STT (Google, grátis)
+# edge-tts é uma API não-oficial (imita chamadas internas do navegador Edge) —
+# a Microsoft muda a validação dela de vez em quando e quebra versões antigas
+# com erro "403 Invalid response status" até alguém atualizar o pacote. Por
+# isso NÃO fixamos uma versão exata aqui: "pip install -U edge-tts" de vez em
+# quando (principalmente se aparecer esse erro 403) resolve na maioria das vezes.
+edge-tts>=7.2.8                 # TTS (Edge, grátis, padrão)
+pyttsx3==2.98                   # TTS 100% offline (fallback — sempre funciona,
+                                 # mesmo se o Edge TTS quebrar de novo no futuro)
+# 0.2.14 é a versão mais nova do pyaudio que existe — diferente do pygame/
+# pillow, não tem uma versão mais nova pra "resolver sozinha": ela só tem
+# instalador pronto até Python 3.13. Em Python mais novo que isso, use
+# Python 3.12 (veja o README) em vez de tentar compilar o pyaudio na mão.
+pyaudio==0.2.14                  # acesso ao microfone
+# pygame (o de verdade) parou de lançar versão nova em 2024 e só publica
+# instalador pronto ("wheel") até Python 3.13 — num Python mais novo (3.14+),
+# o pip tenta compilar ele do zero e quebra com
+# "ModuleNotFoundError: No module named 'setuptools._distutils.msvccompiler'"
+# (o setuptools removeu esse módulo interno antigo que o pygame usa pra
+# compilar no Windows). pygame-ce é a continuação mantida ativamente por
+# outra equipe, 100% compatível (mesmo "import pygame" no código, não muda
+# nada) e com instalador pronto pras versões novas do Python — por isso
+# usamos ele aqui em vez do pygame original.
+pygame-ce>=2.5.8                # player de áudio interrompível
+# faster-whisper==1.0.3         # opcional: STT 100% local (pesado, baixa modelo).
+#                                  Descomente e defina STT_PROVIDER=whisper no .env.
+
+# ===== Integração — voz contínua ("Jarvis" sempre ouvindo, tipo Alexa) =====
+openwakeword>=0.6.0             # wake word local; modelo configurável por WAKE_WORD_MODEL
+numpy>=1.26.4                   # processamento dos frames do openWakeWord
+
+# ===== ETAPA 6 — Interface =====
+# Interface principal: uma janela nativa (pywebview) mostrando uma página
+# HTML/CSS/JS local (interface_web/web/) — permite efeitos de brilho/glow,
+# gradientes e partículas que o CustomTkinter/Tkinter não conseguem
+# desenhar (motivo da troca). No Windows, `pywebview` usa o WebView2 —
+# já vem instalado por padrão no Windows 11 e na maioria das instalações
+# atuais do Windows 10; se faltar, baixe o "Evergreen Bootstrapper" em
+# https://developer.microsoft.com/microsoft-edge/webview2/ (é rapidinho,
+# a Microsoft já usa isso em vários apps do próprio Windows).
+pywebview==6.2.1
+
+# Interface de reserva (fallback automático — main.py::run_gui_mode):
+# se `pywebview` não estiver instalado, ou a janela falhar ao abrir por
+# faltar o WebView2 Runtime, o Jarvis cai sozinho pra esta versão em
+# CustomTkinter (interface/app.py) em vez de ficar sem interface gráfica
+# nenhuma. Mantida instalada sempre, sem custo extra de manutenção real.
+customtkinter==5.2.2
+
+# ===== Interface como app (bandeja do Windows) =====
+# Ícone na bandeja: fechar a janela só minimiza (igual WhatsApp/Discord/
+# Spotify) em vez de encerrar o Jarvis — necessário pra voz contínua e pro
+# início automático com o Windows continuarem funcionando em segundo plano.
+# Sem isso instalado, o Jarvis funciona normalmente, só volta a fechar de
+# verdade ao clicar no X da janela.
+pystray==0.19.5
+
+# ===== ETAPA 8 — Testes =====
+pytest==8.3.3
+
+# ===== Integrações (visão/OCR) =====
+pytesseract==0.3.13
+# Requer também o programa Tesseract OCR instalado separadamente:
+# https://github.com/UB-Mannheim/tesseract/wiki
+
+# ===== Integração — controle do Spotify =====
+spotipy==2.24.0
+
+# ===== Integração — bot do Discord =====
+discord.py==2.7.1
+
+# ===== Integração — Google (Gmail/Calendar/Drive) =====
+google-api-python-client==2.200.0
+google-auth-httplib2==0.4.2
+google-auth-oauthlib==1.4.1

@@ -1,0 +1,14 @@
+{
+  "_comentario": "Use comandos por sistema. Strings antigas continuam aceitas para compatibilidade.",
+  "discord": {
+    "linux": ["discord"],
+    "windows": "C:\\Users\\SEU_USUARIO\\AppData\\Local\\Discord\\Update.exe"
+  },
+  "spotify": {
+    "linux": ["spotify"],
+    "windows": "C:\\Users\\SEU_USUARIO\\AppData\\Roaming\\Spotify\\Spotify.exe"
+  },
+  "vscode": {"linux": ["code"], "windows": "code"},
+  "firefox": {"linux": ["firefox"], "windows": "firefox"},
+  "steam": {"linux": ["steam"], "windows": "steam"}
+}

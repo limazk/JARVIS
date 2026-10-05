@@ -1,0 +1,39 @@
+# Segredos
+.env
+.env.*
+!.env.example
+
+google_credentials.json
+google_token.json
+config.json
+
+# Dados pessoais/runtime
+data.json
+logs/
+database/
+.spotify_cache/
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# IDE
+.vscode/
+.idea/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporários
+*.tmp
+*.temp
