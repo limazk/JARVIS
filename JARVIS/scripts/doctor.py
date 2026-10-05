@@ -72,7 +72,13 @@ def run_doctor() -> int:
         else:
             _line(False, "Audio output", "wpctl/pactl não encontrados")
 
-    _line(importlib.util.find_spec("openwakeword") is not None, "openWakeWord", "pacote Python")
+    openwakeword_available = importlib.util.find_spec("openwakeword") is not None
+    if openwakeword_available:
+        _line(True, "Wake engine", "openWakeWord disponível")
+    elif settings.wake_word_engine.strip().lower() in {"auto", "stt"}:
+        _line(True, "Wake engine", "STT ativo; openWakeWord opcional neste Python")
+    else:
+        _line(False, "Wake engine", "openWakeWord solicitado, mas pacote indisponível")
     provider = LocalProvider()
     server_state, server_detail = provider.server_status()
     state, detail = provider.health_check()
