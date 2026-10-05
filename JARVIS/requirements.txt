@@ -56,8 +56,16 @@ pygame-ce>=2.5.8                # player de áudio interrompível
 #                                  Descomente e defina STT_PROVIDER=whisper no .env.
 
 # ===== Integração — voz contínua ("Jarvis" sempre ouvindo, tipo Alexa) =====
-openwakeword>=0.6.0             # wake word local; modelo configurável por WAKE_WORD_MODEL
-numpy>=1.26.4                   # processamento dos frames do openWakeWord
+# No Linux, openWakeWord depende de tflite-runtime. O PyPI do tflite-runtime
+# só publica wheels até CPython 3.11, então um pip normal falha em Python
+# 3.12+ (incluindo o Python 3.14 atual do Kali rolling). Isso NÃO impede o
+# Jarvis de funcionar: WAKE_WORD_ENGINE=auto usa o caminho STT quando o
+# pacote não está disponível — e esse caminho é justamente o que reconhece
+# a palavra isolada "Jarvis" enquanto o modelo pronto é "hey_jarvis".
+# Quem quiser openWakeWord acústico no Linux deve usar Python <= 3.11 ou um
+# backend/instalação alternativo compatível.
+openwakeword>=0.6.0; python_version < "3.12"
+numpy>=1.26.4                   # também usado pelo openWakeWord quando presente
 
 # ===== ETAPA 6 — Interface =====
 # Interface principal: uma janela nativa (pywebview) mostrando uma página
