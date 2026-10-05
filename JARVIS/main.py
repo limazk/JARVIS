@@ -135,19 +135,26 @@ def run_voice_mode() -> None:
     # captura do comando.
     _handling_lock = threading.Lock()
 
-    def _handle_command() -> None:
+    def _handle_command(prefilled_command: str | None = None) -> None:
         if not _handling_lock.acquire(blocking=False):
             return
         try:
-            greeting = _wake_greeting()
-            print(f"{settings.jarvis_name}: {greeting}")
-            if settings.voice_enabled:
-                speak(greeting, blocking=True)
+            text = (prefilled_command or "").strip()
 
-            print("(ouvindo...)")
-            text = listener.listen_once(phrase_time_limit=10)
+            if not text:
+                greeting = _wake_greeting()
+                print(f"{settings.jarvis_name}: {greeting}")
+                if settings.voice_enabled:
+                    speak(greeting, blocking=True)
+
+                print("(ouvindo...)")
+                text = listener.listen_once(
+                    phrase_time_limit=settings.wake_command_phrase_time_limit
+                )
+
             if not text:
                 return
+
             print(f"Você: {text}")
             reply = agent.process(text, response_mode="voice")
             _speak_with_interrupt(reply)
