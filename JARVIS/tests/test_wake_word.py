@@ -233,3 +233,71 @@ def test_openwakeword_detecta_e_chama_on_wake(monkeypatch):
     finally:
         for mod in ("numpy", "pyaudio", "openwakeword", "openwakeword.model"):
             sys.modules.pop(mod, None)
+
+
+def test_auto_prefere_stt_quando_wake_jarvis_nao_corresponde_ao_modelo_hey_jarvis(monkeypatch):
+    """WAKE_WORD=jarvis não deve fingir que o modelo hey_jarvis reconhece a
+    palavra isolada. Em auto, escolhe STT para permitir dizer só "Jarvis"."""
+    from voice import wake_word
+
+    monkeypatch.setattr(settings, "wake_word_engine", "auto")
+    monkeypatch.setattr(settings, "wake_word", "jarvis")
+    monkeypatch.setattr(settings, "wake_word_model", "hey_jarvis")
+    monkeypatch.setattr(
+        wake_word.WakeWordDetector,
+        "_openwakeword_available",
+        staticmethod(lambda: True),
+    )
+
+    calls = []
+    detector = wake_word.WakeWordDetector(on_wake=lambda *_: None)
+    monkeypatch.setattr(detector, "_run_fallback", lambda: calls.append("stt"))
+    monkeypatch.setattr(
+        detector,
+        "_run_openwakeword",
+        lambda: calls.append("openwakeword"),
+    )
+
+    detector.start()
+    detector._thread.join(timeout=2)
+
+    assert calls == ["stt"]
+
+
+def test_fallback_reaproveita_comando_falado_na_mesma_frase(monkeypatch):
+    """Evita o bug em que 'Jarvis, quanto ganhei...' consumia a frase inteira
+    só para detectar a wake word e depois pedia uma segunda gravação."""
+    from voice import listener as listener_mod
+    from voice import wake_word
+
+    monkeypatch.setattr(settings, "wake_word", "jarvis")
+    monkeypatch.setattr(settings, "wake_command_phrase_time_limit", 12.0)
+
+    texts = iter(["jarvis, quanto ganhei essa semana"])
+    monkeypatch.setattr(
+        listener_mod.listener,
+        "listen_once",
+        lambda phrase_time_limit=None: next(texts, None),
+    )
+
+    received = []
+    detector = wake_word.WakeWordDetector(
+        on_wake=lambda command=None: (
+            received.append(command),
+            detector.stop(),
+        )
+    )
+    detector._run_fallback()
+
+    assert received == ["quanto ganhei essa semana"]
+
+
+def test_extract_command_after_wake_nao_confunde_substring():
+    from voice.wake_word import _extract_command_after_wake
+
+    assert _extract_command_after_wake(
+        "jarvis quanto ganhei essa semana",
+        "jarvis",
+    ) == (True, "quanto ganhei essa semana")
+    assert _extract_command_after_wake("jarvis", "jarvis") == (True, None)
+    assert _extract_command_after_wake("jarvista abriu", "jarvis") == (False, None)
