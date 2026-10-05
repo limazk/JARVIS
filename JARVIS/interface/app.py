@@ -342,21 +342,10 @@ class JarvisApp:
             self._wake_detector = None
         self._append_chat(settings.jarvis_name, "Voz contínua desativada.")
 
-    def _on_wake_triggered(self) -> None:
-        # Chamado JÁ de dentro da thread de detecção de wake word
-        # (voice/wake_word.py::_run_fallback/_run_openwakeword) — de
-        # propósito SÍNCRONO (sem abrir outra thread aqui dentro): o loop de
-        # detecção só volta a "ouvir a wake word de novo" depois que esta
-        # função retornar, e é exatamente isso que evita duas chamadas
-        # concorrentes a listener.listen_once() brigando pelo mesmo
-        # microfone (era isso que causava o erro em loop "'NoneType' object
-        # does not support the context manager protocol" — o processamento
-        # rodava numa thread própria enquanto o detector já tinha voltado a
-        # escutar, e as duas disputavam o mesmo `listener` ao mesmo tempo).
-        # Bloquear aqui não trava a interface: quem está bloqueado é só essa
-        # thread de detecção em segundo plano, nunca a thread principal do
-        # Tkinter (as atualizações de chat abaixo já passam por
-        # self.root.after, que é seguro de chamar de qualquer thread).
+    def _on_wake_triggered(self, prefilled_command: str | None = None) -> None:
+        # Chamado sincronamente pela thread de detecção. Quando o fallback por
+        # STT ouve "Jarvis, <comando>", o trecho depois da wake word já chega
+        # em prefilled_command e não precisa ser capturado uma segunda vez.
         if not self._wake_handling_lock.acquire(blocking=False):
             return
 
@@ -364,22 +353,37 @@ class JarvisApp:
             from main import _wake_greeting
             from voice.listener import listener
 
-            greeting = _wake_greeting()
-            self.root.after(0, lambda: self._append_chat(settings.jarvis_name, greeting))
-            if settings.voice_enabled:
-                self._speak_safely(greeting)
+            text = (prefilled_command or "").strip()
 
-            if not listener.is_ready():
-                return
-            outcome = listener.listen_once_detailed(phrase_time_limit=10)
-            if not outcome.text:
-                from voice.listener import feedback_message
+            if not text:
+                greeting = _wake_greeting()
+                self.root.after(
+                    0,
+                    lambda: self._append_chat(settings.jarvis_name, greeting),
+                )
+                if settings.voice_enabled:
+                    self._speak_safely(greeting)
 
-                message = feedback_message(outcome)
-                if message:
-                    self.root.after(0, lambda: self._append_chat(settings.jarvis_name, message))
-                return
-            text = outcome.text
+                if not listener.is_ready():
+                    return
+                outcome = listener.listen_once_detailed(
+                    phrase_time_limit=settings.wake_command_phrase_time_limit
+                )
+                if not outcome.text:
+                    from voice.listener import feedback_message
+
+                    message = feedback_message(outcome)
+                    if message:
+                        self.root.after(
+                            0,
+                            lambda: self._append_chat(
+                                settings.jarvis_name,
+                                message,
+                            ),
+                        )
+                    return
+                text = outcome.text
+
             self.root.after(0, lambda: self._append_chat("Você", text))
             reply = self.agent.process(text)
             self.root.after(0, lambda: self._on_reply(reply))
