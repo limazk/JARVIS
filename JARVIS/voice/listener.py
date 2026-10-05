@@ -107,6 +107,19 @@ class MicrophoneListener:
             import speech_recognition as sr
 
             self._recognizer = sr.Recognizer()
+            # Ajusta o detector de fim de fala para português natural.
+            # O padrão da biblioteca (pause_threshold ~0.8s) é agressivo
+            # para frases com pequenas pausas e podia cortar perguntas como
+            # "quanto ganhei ... essa semana".
+            pause_threshold = max(0.3, float(settings.stt_pause_threshold))
+            self._recognizer.pause_threshold = pause_threshold
+            self._recognizer.phrase_threshold = max(
+                0.1, float(settings.stt_phrase_threshold)
+            )
+            self._recognizer.non_speaking_duration = min(
+                pause_threshold,
+                max(0.1, float(settings.stt_non_speaking_duration)),
+            )
             self._microphone = sr.Microphone()
             with self._microphone as source:
                 # 1s em vez dos 0.5s originais — meio segundo é pouco tempo
@@ -162,7 +175,11 @@ class MicrophoneListener:
 
             try:
                 with self._microphone as source:
-                    audio = self._recognizer.listen(source, timeout=8, phrase_time_limit=phrase_time_limit)
+                    audio = self._recognizer.listen(
+                        source,
+                        timeout=float(settings.stt_listen_timeout),
+                        phrase_time_limit=phrase_time_limit,
+                    )
             except sr.WaitTimeoutError:
                 return ListenOutcome(text=None, reason="no_speech")
             except Exception as exc:
