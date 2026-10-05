@@ -50,3 +50,42 @@ def test_background_dispatch_does_not_initialize_gui(monkeypatch, tmp_path):
     monkeypatch.setattr("sys.argv", ["main.py", "--background"])
     main.main()
     assert calls == ["background"]
+
+
+def test_background_prefilled_command_nao_reabre_microfone(monkeypatch):
+    """Se a mesma frase já trouxe 'Jarvis, <comando>', o background deve
+    processar <comando> diretamente sem falar por cima nem gravar de novo."""
+    runtime = background.BackgroundRuntime(
+        stop_event=threading.Event(),
+        detector_factory=FakeDetector,
+    )
+    runtime.agent = FakeAgent()
+
+    spoken = []
+    processed = []
+
+    monkeypatch.setattr(runtime, "_speak", lambda text: spoken.append(text))
+    monkeypatch.setattr(
+        runtime.agent,
+        "process",
+        lambda text, response_mode="text": (
+            processed.append((text, response_mode)) or "ok"
+        ),
+    )
+    monkeypatch.setattr(
+        background.listener,
+        "listen_once",
+        lambda **kwargs: (_ for _ in ()).throw(
+            AssertionError("não deveria reabrir o microfone")
+        ),
+    )
+    monkeypatch.setattr(
+        runtime,
+        "_prefetch_rotina_health",
+        lambda: None,
+    )
+
+    runtime._on_wake("quanto ganhei essa semana")
+
+    assert processed == [("quanto ganhei essa semana", "voice")]
+    assert spoken == ["ok"]
