@@ -86,6 +86,16 @@ class Settings:
     wake_word_enabled: bool = field(default_factory=lambda: _bool("WAKE_WORD_ENABLED", True))
     wake_word: str = field(default_factory=lambda: _str("WAKE_WORD", "jarvis"))
     wake_word_model: str = field(default_factory=lambda: _str("WAKE_WORD_MODEL", "hey_jarvis"))
+    # auto | openwakeword | stt
+    # Em auto, WAKE_WORD=jarvis + WAKE_WORD_MODEL=hey_jarvis usa STT,
+    # porque o modelo acústico pronto foi treinado para "Hey Jarvis".
+    wake_word_engine: str = field(default_factory=lambda: _str("WAKE_WORD_ENGINE", "auto"))
+    # Limite máximo da frase capturada depois da wake word. O SpeechRecognition
+    # ainda encerra antes quando detecta silêncio; este valor só evita cortes
+    # prematuros em comandos um pouco mais longos.
+    wake_command_phrase_time_limit: float = field(
+        default_factory=lambda: _float("WAKE_COMMAND_PHRASE_TIME_LIMIT", 12.0)
+    )
     # Frase que o Jarvis fala assim que ouve a wake word, antes de escutar o
     # comando de verdade (ex.: "Jarvis" -> "Sim, Senhor. O que deseja?").
     # Vazia ("") = o Jarvis monta a frase sozinho a partir de USER_TITLE.
@@ -131,6 +141,14 @@ class Settings:
 
     # Voz
     stt_provider: str = field(default_factory=lambda: _str("STT_PROVIDER", "google"))
+    # Ajustes do detector de fim de fala. Um pause_threshold maior evita que
+    # pausas naturais curtas no meio da pergunta sejam tratadas como fim.
+    stt_pause_threshold: float = field(default_factory=lambda: _float("STT_PAUSE_THRESHOLD", 1.2))
+    stt_phrase_threshold: float = field(default_factory=lambda: _float("STT_PHRASE_THRESHOLD", 0.2))
+    stt_non_speaking_duration: float = field(
+        default_factory=lambda: _float("STT_NON_SPEAKING_DURATION", 0.5)
+    )
+    stt_listen_timeout: float = field(default_factory=lambda: _float("STT_LISTEN_TIMEOUT", 8.0))
     tts_provider: str = field(default_factory=lambda: _str("TTS_PROVIDER", "edge"))
     edge_tts_voice: str = field(default_factory=lambda: _str("EDGE_TTS_VOICE", "pt-BR-AntonioNeural"))
     elevenlabs_api_key: str = field(default_factory=lambda: _str("ELEVENLABS_API_KEY", ""))
