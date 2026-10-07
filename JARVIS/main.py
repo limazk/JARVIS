@@ -268,6 +268,20 @@ def main() -> int:
     if args.doctor:
         return run_doctor()
 
+    # NEXUS pode ser aberto em outro terminal mesmo com a interface principal
+    # do JARVIS já em execução. Ele compartilha banco/memória/tools, mas não
+    # inicia um segundo scheduler de lembretes.
+    if args.nexus:
+        from jarvis_rotina import RotinaProcessManager
+
+        nexus_rotina_manager = RotinaProcessManager()
+        try:
+            nexus_rotina_manager.ensure_running()
+            run_nexus_mode()
+        finally:
+            nexus_rotina_manager.stop()
+        return 0
+
     from core.single_instance import AlreadyRunningError, SingleInstanceLock
 
     instance = SingleInstanceLock(settings.instance_lock_path)
@@ -286,9 +300,7 @@ def main() -> int:
 
             rotina_manager = RotinaProcessManager()
             rotina_manager.ensure_running()
-            if args.nexus:
-                run_nexus_mode()
-            elif args.voice:
+            if args.voice:
                 run_voice_mode()
             elif args.text:
                 run_text_mode()
