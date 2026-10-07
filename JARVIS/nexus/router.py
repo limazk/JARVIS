@@ -88,22 +88,22 @@ def local_route(prompt: str, availability: dict[str, bool]) -> RoutingDecision:
         # APIs de texto não são priorizadas para alteração real de arquivos.
         "code": (
             "codex", "claude", "gemini_cli", "jarvis",
-            "cerebras", "gemini", "groq", "mistral", "openrouter",
+            "cerebras", "gemini", "groq", "openrouter",
             "together", "cloudflare", "ollama",
         ),
         # Aqui as IAs online baratas entram cedo, pois review não precisa editar.
         "review": (
-            "mistral", "cerebras", "groq", "gemini", "openrouter",
+            "cerebras", "groq", "gemini", "openrouter",
             "together", "cloudflare", "claude", "ollama", "jarvis",
         ),
         "research": (
-            "gemini", "openrouter", "groq", "together", "mistral",
+            "gemini", "openrouter", "groq", "together",
             "cerebras", "cloudflare", "jarvis", "claude", "ollama",
         ),
         # General fica deliberadamente conservador: a baixa confiança fará
         # o online_router verificar a escolha quando estiver configurado.
         "general": (
-            "jarvis", "gemini", "groq", "openrouter", "mistral",
+            "jarvis", "gemini", "groq", "openrouter",
             "together", "cloudflare", "cerebras", "claude", "ollama",
         ),
     }
