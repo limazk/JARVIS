@@ -222,6 +222,7 @@ class NexusApp:
                     "provider",
                     (
                         f"{provider.label}: {'disponível' if provider.available else 'offline'} "
+                        f"· {'IDENTIFICADOR' if provider.routing_only else 'WORKER'} "
                         f"· {provider.transport} · {provider.model}"
                     ),
                     4 if provider.available else 6,
@@ -301,7 +302,11 @@ class NexusApp:
         self.box(y, x, h, w, "SISTEMA", 2)
         rows = [("JARVIS", True, "local · núcleo interno")]
         rows += [
-            (p.label, p.available, f"{p.transport} · {p.model}")
+            (
+                p.label,
+                p.available,
+                f"{'router' if p.routing_only else 'worker'} · {p.transport} · {p.model}",
+            )
             for p in self.runtime.providers.values()
         ]
         for i, (name, ok, detail) in enumerate(rows[: h - 2]):
