@@ -82,14 +82,14 @@ def discover() -> dict[str, Provider]:
         # APIs online: boas para router, planejamento, review e respostas.
         "gemini": Provider(
             "gemini", "Gemini", "api",
-            _env("GEMINI_MODEL", settings.gemini_model or "gemini-3.8-flash"),
+            _env("NEXUS_GEMINI_MODEL", "gemini-3.8-flash"),
             bool(settings.gemini_api_key),
             "https://generativelanguage.googleapis.com/v1beta/openai",
             ("router", "reason", "review", "general"),
         ),
         "groq": Provider(
             "groq", "Groq", "api",
-            _env("GROQ_MODEL", "openai/gpt-oss-20b"),
+            _env("NEXUS_GROQ_MODEL", "openai/gpt-oss-20b"),
             bool(settings.groq_api_key),
             "https://api.groq.com/openai/v1",
             ("router", "fast", "reason", "review"),
