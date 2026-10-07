@@ -1,4 +1,4 @@
-# 🤖 JARVIS
+# 🤖 JARVIS   AUTOMATIZANDO TUDO NESSA PORRA
 
 <p align="center">
   Assistente pessoal inteligente para Linux, desenvolvido para integrar voz, inteligência artificial, automações, ferramentas externas e um sistema de orquestração multiagente.
