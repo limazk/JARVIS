@@ -1,0 +1,31 @@
+name: NEXUS smoke
+
+on:
+  push:
+    paths:
+      - "JARVIS/nexus/**"
+      - "JARVIS/tests/test_nexus.py"
+      - "JARVIS/.env.example"
+      - ".github/workflows/nexus-smoke.yml"
+  pull_request:
+    paths:
+      - "JARVIS/nexus/**"
+      - "JARVIS/tests/test_nexus.py"
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: JARVIS
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install minimal test dependencies
+        run: python -m pip install -U pytest python-dotenv requests
+      - name: Compile NEXUS
+        run: python -m compileall -q nexus core/agent.py main.py scripts/doctor.py
+      - name: Run NEXUS tests
+        run: pytest -q tests/test_nexus.py
