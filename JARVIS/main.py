@@ -11,6 +11,7 @@ Uso (rode sempre a partir da pasta jarvis/, com o venv ativado):
     python main.py --minimized # abre a interface direto na bandeja (usado
                                 # pelo início automático com o Windows)
     python main.py --background # serviço headless (systemd --user no Linux)
+    python main.py --nexus      # abre o orquestrador multiagente NEXUS no terminal
     python main.py --doctor     # diagnóstico sem mostrar segredos
     python main.py --debug     # ativa logs detalhados de intenção/tool/tempo
 """
@@ -201,6 +202,16 @@ def run_doctor() -> int:
     return diagnose()
 
 
+def run_nexus_mode() -> None:
+    """Abre a TUI do NEXUS usando o núcleo, memória e tools deste JARVIS."""
+    if not sys.stdin.isatty() or not sys.stdout.isatty():
+        print("O NEXUS precisa de um terminal interativo.")
+        return
+    from nexus.app import launch
+
+    launch()
+
+
 def run_gui_mode(minimized: bool = False) -> None:
     # Interface nova (interface_web/), uma janela pywebview mostrando uma
     # página HTML/CSS/JS local — tentada primeiro por conseguir os efeitos
@@ -243,6 +254,7 @@ def main() -> int:
     parser.add_argument("--debug", action="store_true", help="Ativa logs de debug")
     parser.add_argument("--background", action="store_true", help="Modo invisível/headless para serviço")
     parser.add_argument("--doctor", action="store_true", help="Diagnostica sistema, áudio, Ollama e ROTINA")
+    parser.add_argument("--nexus", action="store_true", help="Abre o orquestrador multiagente NEXUS no terminal")
     parser.add_argument(
         "--minimized", action="store_true",
         help="Abre a interface direto minimizada na bandeja (usado pelo início automático com o Windows)",
@@ -274,7 +286,9 @@ def main() -> int:
 
             rotina_manager = RotinaProcessManager()
             rotina_manager.ensure_running()
-            if args.voice:
+            if args.nexus:
+                run_nexus_mode()
+            elif args.voice:
                 run_voice_mode()
             elif args.text:
                 run_text_mode()
