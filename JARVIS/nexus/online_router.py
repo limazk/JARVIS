@@ -167,7 +167,8 @@ def verify_route(
     used: list[str] = []
     first: RoutingDecision | None = None
 
-    for verifier in router_candidates[:2]:
+    max_calls = max(1, _int("NEXUS_ROUTER_MAX_CALLS", 3))
+    for verifier in router_candidates[:max_calls]:
         request = _router_prompt(prompt, available_routes, local)
         run = run_api_provider(
             verifier,
