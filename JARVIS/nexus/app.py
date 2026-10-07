@@ -171,9 +171,14 @@ class NexusApp:
                 self.current_provider = payload.provider
                 self.current_kind = payload.kind
                 self.progress = 1.0 if payload.ok else self.progress
+                tracked_tokens = payload.router_tokens + payload.worker_tokens
                 self.log(
                     "nexus",
-                    f"{'Concluído' if payload.ok else 'Falhou'} via {payload.provider} em {payload.elapsed:.1f}s",
+                    (
+                        f"{'Concluído' if payload.ok else 'Falhou'} via {payload.provider} "
+                        f"em {payload.elapsed:.1f}s · APIs {payload.api_calls} · "
+                        f"tokens rastreados {tracked_tokens}"
+                    ),
                     4 if payload.ok else 6,
                 )
 
@@ -211,15 +216,32 @@ class NexusApp:
             self.log("nexus", "Providers reescaneados.", 4)
         elif cmd == "/providers":
             self.runtime.refresh()
-            self.log("provider", "JARVIS interno: disponível", 4)
+            self.log("provider", "JARVIS interno: disponível · tools/memória/ROTINA", 4)
             for provider in self.runtime.providers.values():
                 self.log(
                     "provider",
-                    f"{provider.label}: {'disponível' if provider.available else 'offline'} ({provider.model})",
+                    (
+                        f"{provider.label}: {'disponível' if provider.available else 'offline'} "
+                        f"· {provider.transport} · {provider.model}"
+                    ),
                     4 if provider.available else 6,
                 )
+        elif cmd == "/tokens":
+            if self.last_result is None:
+                self.log("tokens", "Nenhuma tarefa concluída nesta sessão.", 7)
+            else:
+                tracked = self.last_result.router_tokens + self.last_result.worker_tokens
+                self.log(
+                    "tokens",
+                    (
+                        f"router={self.last_result.router_tokens} · worker={self.last_result.worker_tokens} "
+                        f"· total rastreado={tracked} · APIs={self.last_result.api_calls} "
+                        f"· rota={self.last_result.route_source}"
+                    ),
+                    1,
+                )
         elif cmd == "/help":
-            self.log("nexus", "/providers /refresh /demo /result /clear /quit", 1)
+            self.log("nexus", "/providers /tokens /refresh /demo /result /clear /quit", 1)
         else:
             self._start_task(cmd)
 
@@ -277,8 +299,11 @@ class NexusApp:
 
     def draw_system(self, y: int, x: int, h: int, w: int) -> None:
         self.box(y, x, h, w, "SISTEMA", 2)
-        rows = [("JARVIS", True, "núcleo interno")]
-        rows += [(p.label, p.available, p.model) for p in self.runtime.providers.values()]
+        rows = [("JARVIS", True, "local · núcleo interno")]
+        rows += [
+            (p.label, p.available, f"{p.transport} · {p.model}")
+            for p in self.runtime.providers.values()
+        ]
         for i, (name, ok, detail) in enumerate(rows[: h - 2]):
             yy = y + 1 + i
             self.safe_add(yy, x + 2, "●", self.color(4 if ok else 6, True), 2)
@@ -308,6 +333,18 @@ class NexusApp:
         task = self.current_prompt or "Aguardando tarefa"
         self.safe_add(y + 1, x + 2, f"Tarefa: {task}", self.color(1, True), w - 4)
         self.safe_add(y + 2, x + 2, f"Provider: {self.current_provider}  Tipo: {self.current_kind}", self.color(7), w - 4)
+        if self.last_result is not None and not self.busy and h >= 8:
+            tracked = self.last_result.router_tokens + self.last_result.worker_tokens
+            self.safe_add(
+                y + 3,
+                x + 2,
+                (
+                    f"Rota: {self.last_result.route_source} {self.last_result.route_confidence:.0%} · "
+                    f"APIs: {self.last_result.api_calls} · tokens: {tracked}"
+                ),
+                self.color(7),
+                w - 4,
+            )
         inner = max(8, w - 12)
         filled = int(inner * max(0.0, min(1.0, self.progress)))
         bar = "█" * filled + "░" * (inner - filled)
@@ -350,7 +387,7 @@ class NexusApp:
         visible = self.input_text[-(width - 2):]
         placeholder = "descreva sua tarefa... (/help)"
         self.safe_add(y, x + 1, visible or placeholder, curses.A_DIM if not visible else 0, width - 2)
-        self.safe_add(h - 2, 1, "Enter enviar · /result saída · /providers status · Ctrl+C sair", self.color(7), w - 3)
+        self.safe_add(h - 2, 1, "Enter enviar · /tokens uso · /providers status · /result saída · Ctrl+C sair", self.color(7), w - 3)
         try:
             self.stdscr.move(y, min(w - 2, x + 1 + len(visible)))
         except curses.error:
