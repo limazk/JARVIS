@@ -1,32 +1,168 @@
-# NEXUS — Orquestrador integrado ao JARVIS
+# NEXUS v0.3 — Orquestrador econômico integrado ao JARVIS
 
-O NEXUS agora vive dentro do projeto JARVIS e reutiliza o núcleo real do assistente.
+O NEXUS vive dentro do JARVIS e foi desenhado para gastar computação local à vontade, mas evitar chamadas/tokens online desnecessários.
 
-## O que está integrado
+## Fluxo
 
-- `JarvisAgent` como executor interno e fallback.
-- `ToolRegistry` completo do JARVIS, incluindo ROTINA, arquivos, sistema, GitHub, Gmail, Calendar e demais tools já registradas.
-- memória de longo prazo do JARVIS para contexto relevante.
-- mesmo banco SQLite do JARVIS, com a tabela `nexus_jobs` para histórico.
-- mesmo sistema de permissões: ações MEDIUM/HIGH abrem confirmação dentro da TUI.
-- workers opcionais: Codex CLI, Claude CLI, Gemini CLI e Ollama.
-- fallback automático para o JARVIS se um worker externo não existir ou falhar.
+```text
+TAREFA
+  ↓
+REGRAS LOCAIS (0 tokens)
+  ↓
+confiança suficiente?
+  ├─ sim → executa diretamente
+  └─ não → ROUTER ONLINE CURTO
+              ↓
+        Gemini → Groq → OpenRouter → Mistral → Cloudflare → Together → Cerebras
+              ↓
+        2ª IA apenas se a primeira falhar ou estiver pouco confiante
+              ↓
+        escolhe UM worker
+              ↓
+        execução
+              ↓
+        validação local
+```
+
+## Providers disponíveis
+
+### Terminal / execução real no repositório
+- Codex CLI
+- Claude CLI
+- Gemini CLI
+- Ollama local
+- JARVIS interno
+
+### APIs online
+- Gemini API
+- Groq
+- OpenRouter
+- Mistral
+- Cloudflare Workers AI
+- Together AI
+- Cerebras
+
+As APIs online são usadas principalmente para roteamento, planejamento, classificação, revisão e respostas. Para tarefas que precisam editar/testar arquivos de verdade, o NEXUS prioriza Codex/Claude/Gemini CLI/JARVIS.
+
+## Economia de tokens
+
+Por padrão:
+
+- intenções conhecidas do JARVIS nunca usam router online;
+- tarefas locais com confiança >= 85% não usam router online;
+- o router recebe no máximo 1600 caracteres da tarefa;
+- a resposta do router é limitada a 96 tokens;
+- no máximo 3 tentativas de router, e só em falha/baixa confiança;
+- decisões online ficam em cache por 30 minutos;
+- somente um worker é chamado por padrão;
+- não existe votação entre vários modelos para toda tarefa;
+- o worker recebe apenas memória relevante e contexto compacto;
+- saída de API do worker é limitada por padrão a 1200 tokens.
+
+## Cadeia padrão do router
+
+```text
+Gemini
+  ↓ falha/baixa confiança
+Groq GPT-OSS 20B
+  ↓ falha/baixa confiança
+OpenRouter Free
+  ↓
+Mistral
+  ↓
+Cloudflare Workers AI
+  ↓
+Together AI
+  ↓
+Cerebras
+```
+
+A cadeia pode ser alterada em `.env`:
+
+```env
+NEXUS_ROUTER_CHAIN=gemini,groq,openrouter,mistral,cloudflare,together,cerebras
+```
+
+## Configuração principal
+
+```env
+NEXUS_ONLINE_ROUTER=true
+NEXUS_ROUTER_VERIFY_ALWAYS=false
+NEXUS_ROUTER_CONFIDENCE=0.85
+NEXUS_ROUTER_MAX_INPUT_CHARS=1600
+NEXUS_ROUTER_MAX_OUTPUT_TOKENS=96
+NEXUS_ROUTER_MAX_CALLS=3
+NEXUS_ROUTER_CACHE_TTL=1800
+NEXUS_WORKER_MAX_OUTPUT_TOKENS=1200
+```
+
+Se quiser que TODA tarefa não-local seja verificada por uma IA online:
+
+```env
+NEXUS_ROUTER_VERIFY_ALWAYS=true
+```
+
+Isso aumenta o consumo de tokens e por isso fica desligado por padrão.
+
+## Chaves opcionais
+
+Configure apenas os providers que quiser usar:
+
+```env
+GEMINI_API_KEY=
+GROQ_API_KEY=
+OPENROUTER_API_KEY=
+MISTRAL_API_KEY=
+CLOUDFLARE_ACCOUNT_ID=
+CLOUDFLARE_API_TOKEN=
+TOGETHER_API_KEY=
+CEREBRAS_API_KEY=
+```
+
+Nenhuma chave deve ser commitada.
+
+## Modelos padrão do NEXUS
+
+```env
+NEXUS_GEMINI_MODEL=gemini-3.8-flash
+NEXUS_GROQ_MODEL=openai/gpt-oss-20b
+OPENROUTER_MODEL=openrouter/free
+MISTRAL_MODEL=ministral-3b-latest
+CLOUDFLARE_MODEL=@cf/openai/gpt-oss-20b
+TOGETHER_MODEL=Prism-ML/Ternary-Bonsai-27B
+CEREBRAS_MODEL=zai-glm-4.7
+```
+
+Todos podem ser trocados pelo `.env` sem editar código.
+
+## Integração com JARVIS
+
+O NEXUS reutiliza:
+
+- `JarvisAgent`;
+- ToolRegistry;
+- memória de longo prazo;
+- ROTINA;
+- PermissionManager;
+- banco SQLite;
+- logs/atividade.
+
+Se um provider externo falhar, o NEXUS volta para o JARVIS sem sair chamando vários modelos em sequência para executar a tarefa.
 
 ## Como abrir
 
-Dentro da pasta `JARVIS/`:
-
 ```bash
+cd JARVIS
 python main.py --nexus
 ```
 
-Também funciona:
+ou:
 
 ```bash
 python -m nexus
 ```
 
-Para instalar um comando global no Linux:
+Para criar o comando global:
 
 ```bash
 chmod +x scripts/install_nexus_cli.sh
@@ -34,39 +170,18 @@ chmod +x scripts/install_nexus_cli.sh
 nexus
 ```
 
-## Roteamento
-
-O NEXUS primeiro verifica o parser local do próprio JARVIS. Se a mensagem já corresponde a uma tool local, ela permanece no JARVIS.
-
-Depois:
-
-- código: Codex → Claude → Gemini → Ollama → JARVIS
-- revisão: Claude → Codex → Gemini → Ollama → JARVIS
-- pesquisa: Gemini → Claude → JARVIS → Ollama → Codex
-- geral: JARVIS → Claude → Gemini → Ollama → Codex
-
 ## Comandos da TUI
 
 ```text
-/providers
-/refresh
-/demo
-/result
-/clear
-/quit
+/providers   mostra todos os providers e se estão configurados
+/tokens      mostra tokens/chamadas rastreados da última tarefa
+/refresh     reescaneia CLIs e chaves
+/demo        testa o pipeline sem chamar IA
+/result      alterna logs/resultado
+/clear       limpa a tela
+/quit        fecha o NEXUS
 ```
 
-## Segurança
+## Observação sobre métricas
 
-Workers externos não recebem chaves do JARVIS pelo NEXUS. Eles usam a autenticação dos próprios CLIs instalados no computador.
-
-Ações executadas pelo `JarvisAgent` continuam passando pelo `PermissionManager`. Quando uma ação exige confirmação, a TUI mostra um modal `[S] Sim / [N] Não`.
-
-## Variáveis opcionais
-
-```bash
-NEXUS_PROVIDER_TIMEOUT=300
-NEXUS_MAX_OUTPUT=50000
-```
-
-O modelo do Ollama é o mesmo configurado em `LOCAL_LLM_MODEL`.
+O NEXUS rastreia tokens devolvidos pelas APIs online compatíveis. CLIs como Codex/Claude podem ter contabilização própria e o uso interno de LLM do JARVIS não é somado automaticamente ao contador do NEXUS.
