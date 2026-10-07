@@ -30,6 +30,7 @@ class Provider:
     available: bool
     endpoint: str = ""
     capabilities: tuple[str, ...] = ()
+    routing_only: bool = False
 
 
 @dataclass(frozen=True)
@@ -79,7 +80,25 @@ def discover() -> dict[str, Provider]:
             capabilities=("local", "reason", "code"),
         ),
 
-        # APIs online: boas para router, planejamento, review e respostas.
+        # Routers online: SOMENTE identificam/roteiam; nunca executam a tarefa final.
+        "grok": Provider(
+            "grok", "Grok", "api",
+            _env("NEXUS_GROK_MODEL", "grok-4.7"),
+            _api_available("XAI_API_KEY"),
+            "https://api.x.ai/v1",
+            ("router", "classification"),
+            True,
+        ),
+        "mistral": Provider(
+            "mistral", "Mistral Router", "api",
+            _env("MISTRAL_MODEL", "ministral-3b-latest"),
+            _api_available("MISTRAL_API_KEY"),
+            "https://api.mistral.ai/v1",
+            ("router", "classification"),
+            True,
+        ),
+
+        # Workers online: funcionalidades executoras/analíticas, como os demais agentes.
         "gemini": Provider(
             "gemini", "Gemini", "api",
             _env("NEXUS_GEMINI_MODEL", "gemini-3.8-flash"),
@@ -100,13 +119,6 @@ def discover() -> dict[str, Provider]:
             _api_available("OPENROUTER_API_KEY"),
             "https://openrouter.ai/api/v1",
             ("router", "fallback", "general", "review"),
-        ),
-        "mistral": Provider(
-            "mistral", "Mistral", "api",
-            _env("MISTRAL_MODEL", "ministral-3b-latest"),
-            _api_available("MISTRAL_API_KEY"),
-            "https://api.mistral.ai/v1",
-            ("router", "fast", "classification", "review"),
         ),
         "cloudflare": Provider(
             "cloudflare", "Cloudflare AI", "api",
@@ -232,6 +244,8 @@ def run_cli(
 
 
 def _api_key(provider: str) -> str:
+    if provider == "grok":
+        return _env("XAI_API_KEY")
     if provider == "gemini":
         return settings.gemini_api_key
     if provider == "groq":
@@ -365,6 +379,13 @@ def run_provider(
     spec = discover().get(provider)
     if spec is None:
         return ProviderRun(False, f"Provider desconhecido: {provider}", provider, status_code=404)
+    if spec.routing_only:
+        return ProviderRun(
+            False,
+            f"{provider}: reservado ao roteamento e não pode executar a tarefa final.",
+            provider,
+            status_code=409,
+        )
     if spec.transport == "cli":
         return run_cli(
             provider,
