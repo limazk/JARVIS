@@ -29,6 +29,7 @@ class JarvisAgent:
         self,
         confirm_callback: Optional[ConfirmCallback] = None,
         on_reminder_due: Optional[Callable[[str], None]] = None,
+        start_reminder_scheduler: bool = True,
     ) -> None:
         self.state = AgentState.OFFLINE
         self.context = ConversationContext()
@@ -42,7 +43,8 @@ class JarvisAgent:
         # também fala o aviso em voz alta.
         self._on_reminder_due = on_reminder_due or (lambda message: print(f"\n{message}\n"))
         self.reminder_scheduler = ReminderScheduler(on_due=self._on_reminder_due)
-        self.reminder_scheduler.start()
+        if start_reminder_scheduler:
+            self.reminder_scheduler.start()
 
         self.state = AgentState.ONLINE
         logger.info("Jarvis inicializado. LLM disponível: %s", self.llm.available)
