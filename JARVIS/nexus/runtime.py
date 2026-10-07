@@ -101,6 +101,7 @@ class NexusRuntime:
         self.jarvis = JarvisAgent(
             confirm_callback=confirm_callback,
             on_reminder_due=lambda message: self._emit("jarvis", "lembrete", message, "jarvis"),
+            start_reminder_scheduler=False,
         )
 
     def _emit(self, actor: str, state: str, message: str = "", provider: str = "") -> None:
