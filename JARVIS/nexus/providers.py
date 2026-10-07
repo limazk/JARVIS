@@ -104,21 +104,21 @@ def discover() -> dict[str, Provider]:
             _env("NEXUS_GEMINI_MODEL", "gemini-3.8-flash"),
             bool(settings.gemini_api_key),
             "https://generativelanguage.googleapis.com/v1beta/openai",
-            ("router", "reason", "review", "general"),
+            ("reason", "review", "general"),
         ),
         "groq": Provider(
             "groq", "Groq", "api",
             _env("NEXUS_GROQ_MODEL", "openai/gpt-oss-20b"),
             bool(settings.groq_api_key),
             "https://api.groq.com/openai/v1",
-            ("router", "fast", "reason", "review"),
+            ("fast", "reason", "review", "general"),
         ),
         "openrouter": Provider(
             "openrouter", "OpenRouter", "api",
             _env("OPENROUTER_MODEL", "openrouter/free"),
             _api_available("OPENROUTER_API_KEY"),
             "https://openrouter.ai/api/v1",
-            ("router", "fallback", "general", "review"),
+            ("fallback", "general", "review", "reason"),
         ),
         "cloudflare": Provider(
             "cloudflare", "Cloudflare AI", "api",
@@ -128,14 +128,14 @@ def discover() -> dict[str, Provider]:
                 f"https://api.cloudflare.com/client/v4/accounts/{cf_account}/ai/v1"
                 if cf_account else ""
             ),
-            ("router", "fast", "general"),
+            ("fast", "general", "reason"),
         ),
         "together": Provider(
             "together", "Together AI", "api",
             _env("TOGETHER_MODEL", "Prism-ML/Ternary-Bonsai-27B"),
             _api_available("TOGETHER_API_KEY"),
             "https://api.together.ai/v1",
-            ("router", "general", "review", "open_models"),
+            ("general", "review", "reason", "open_models"),
         ),
         "cerebras": Provider(
             "cerebras", "Cerebras", "api",
@@ -316,7 +316,12 @@ def run_api_provider(
     }
 
     # Limites curtos são a principal defesa contra desperdício.
-    if provider == "cerebras":
+    if provider == "grok":
+        payload["max_completion_tokens"] = max_tokens
+        payload["temperature"] = 0.1 if router_mode else 0.3
+        if router_mode:
+            payload["reasoning_effort"] = "low"
+    elif provider == "cerebras":
         payload["max_completion_tokens"] = max_tokens
         payload["temperature"] = 0.8 if router_mode else 0.9
         if router_mode:
