@@ -39,7 +39,7 @@ def _int(name: str, default: int) -> int:
 def _chain() -> tuple[str, ...]:
     raw = os.getenv(
         "NEXUS_ROUTER_CHAIN",
-        "gemini,groq,openrouter,mistral,cloudflare,together,cerebras",
+        "grok,mistral",
     )
     return tuple(part.strip().lower() for part in raw.split(",") if part.strip())
 
@@ -136,9 +136,10 @@ def verify_route(
     local: RoutingDecision,
     availability: dict[str, bool],
 ) -> OnlineRouterResult:
-    """Confirma/ajusta uma rota com o mínimo possível de tokens.
+    """Confirma/ajusta uma rota usando APENAS Grok/Mistral como identificadores.
 
-    A segunda IA só é chamada se a primeira falhar ou devolver baixa confiança.
+    Nenhum outro worker é usado para classificar. A segunda IA identificadora
+    só entra se a primeira falhar ou devolver baixa confiança.
     """
     enabled = _bool("NEXUS_ONLINE_ROUTER", True)
     verify_always = _bool("NEXUS_ROUTER_VERIFY_ALWAYS", False)
@@ -151,12 +152,19 @@ def verify_route(
         return OnlineRouterResult(local, 0, 0, 0, ())
 
     providers = discover()
-    available_routes = [name for name, ok in availability.items() if ok]
+    available_routes = [
+        name for name, ok in availability.items()
+        if ok and (
+            name == "jarvis"
+            or (name in providers and not providers[name].routing_only)
+        )
+    ]
     router_candidates = [
         name for name in _chain()
         if availability.get(name, False)
         and name in providers
         and providers[name].transport == "api"
+        and providers[name].routing_only
     ]
     if not router_candidates:
         return OnlineRouterResult(local, 0, 0, 0, ())
