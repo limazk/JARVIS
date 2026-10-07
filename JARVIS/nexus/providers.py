@@ -405,7 +405,7 @@ def run_provider(
     return run
 
 
-def worker_prompt(user_prompt: str, memories: list[str]) -> str:
+def worker_prompt(user_prompt: str, memories: list[str], plugin_context: str = "") -> str:
     """Monta contexto mínimo: nunca envia o histórico inteiro."""
     context = ""
     if memories:
@@ -421,4 +421,5 @@ def worker_prompt(user_prompt: str, memories: list[str]) -> str:
         "Se você não possui acesso ao terminal, entregue instruções/patches e não finja execução. "
         f"Raiz do projeto quando houver acesso local: {settings.base_dir}.\n\n"
         f"Tarefa:\n{task}{context}"
+        + (f"\n\n{plugin_context}" if plugin_context else "")
     )

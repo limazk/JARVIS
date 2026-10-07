@@ -1,4 +1,4 @@
-# NEXUS v0.4 — Dual Router + Workers
+# NEXUS v0.5 — Dual Router + Workers + Plugins
 
 O NEXUS usa somente **Grok** e **Mistral** para identificar/rotear tarefas.
 Todas as outras IAs ficam disponíveis como **workers funcionais**, no mesmo
@@ -208,3 +208,46 @@ python -m nexus
 - o NEXUS não envia automaticamente o histórico inteiro;
 - ações executadas pelo JARVIS continuam passando pelo PermissionManager;
 - falha de worker cai para JARVIS em vez de disparar vários executores em cadeia.
+
+
+## PluginRegistry v0.5
+
+O NEXUS/JARVIS agora possui uma camada de plugins independente dos modelos de IA.
+
+Fluxo:
+
+    Grok/Mistral -> escolhem/confirmam o worker
+    NEXUS/JARVIS -> PluginRegistry -> PermissionManager -> serviço externo
+
+Plugins principais registrados:
+
+    DEV
+    GitHub · Filesystem · Shell · Docker · Supabase · Render · Vercel
+
+    PRODUTIVIDADE
+    Trello · Notion · Gmail · Calendar · Drive · Slack · GitBook
+
+    WEB
+    Browser · Tavily · Exa
+
+    DESIGN / NEGÓCIO / OBSERVABILIDADE
+    Figma · Stripe · PostHog · Datadog
+
+Notion faz parte do núcleo de produtividade, com busca, leitura, criação e append
+de conteúdo. Trello possui leitura/criação/movimentação de cards. Gmail/Calendar/
+Drive reutilizam as integrações já existentes no JARVIS.
+
+O ToolRegistry expõe três ferramentas genéricas:
+
+    list_plugins
+    plugin_status
+    plugin_execute
+
+O NEXUS também possui /plugins e /plugin ID na TUI.
+
+Workers externos podem receber um catálogo reduzido de plugins. Quando uma
+integração é necessária, o protocolo NEXUS_PLUGIN permite pedir uma capability
+sem receber a chave da API. O PermissionManager continua sendo a barreira para
+ações de escrita.
+
+Detalhes completos: plugins/README.md

@@ -99,6 +99,22 @@ def run_doctor() -> int:
         _line(False, "NEXUS", str(exc))
 
     try:
+        from plugins.registry import build_default_plugin_registry
+        from tools.registry import ToolRegistry
+
+        plugin_registry = build_default_plugin_registry(ToolRegistry())
+        rows = plugin_registry.status_rows()
+        online_plugins = [row["id"] for row in rows if row["available"]]
+        _line(
+            True,
+            "NEXUS Plugins",
+            f"{len(online_plugins)}/{len(rows)} disponíveis"
+            + (f" ({', '.join(online_plugins[:8])})" if online_plugins else ""),
+        )
+    except Exception as exc:
+        _line(False, "NEXUS Plugins", str(exc))
+
+    try:
         health = RotinaClient(timeout=2).health()
         _line(health.get("status") == "ok", "ROTINA API", settings.rotina_url)
     except RotinaError as exc:

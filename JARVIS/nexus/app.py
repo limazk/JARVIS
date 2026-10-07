@@ -227,6 +227,29 @@ class NexusApp:
                     ),
                     4 if provider.available else 6,
                 )
+        elif cmd == "/plugins":
+            if self.runtime.plugin_registry is None:
+                self.log("plugin", "PluginRegistry indisponível.", 6)
+            else:
+                for row in self.runtime.plugin_registry.status_rows():
+                    self.log(
+                        "plugin",
+                        f"{row['id']}: {'online' if row['available'] else 'offline'} · "
+                        f"{row['category']} · {', '.join(row['capabilities'])}",
+                        4 if row["available"] else 7,
+                    )
+        elif cmd.startswith("/plugin "):
+            plugin_id = cmd.split(maxsplit=1)[1].strip()
+            plugin = self.runtime.plugin_registry.get(plugin_id) if self.runtime.plugin_registry else None
+            if plugin is None:
+                self.log("plugin", f"Plugin desconhecido: {plugin_id}", 6)
+            else:
+                status = plugin.status()
+                self.log(
+                    "plugin",
+                    f"{plugin.name}: {'online' if status.available else 'offline'} · {status.detail}",
+                    4 if status.available else 6,
+                )
         elif cmd == "/tokens":
             if self.last_result is None:
                 self.log("tokens", "Nenhuma tarefa concluída nesta sessão.", 7)
@@ -242,7 +265,7 @@ class NexusApp:
                     1,
                 )
         elif cmd == "/help":
-            self.log("nexus", "/providers /tokens /refresh /demo /result /clear /quit", 1)
+            self.log("nexus", "/providers /plugins /plugin ID /tokens /refresh /demo /result /clear /quit", 1)
         else:
             self._start_task(cmd)
 
@@ -392,7 +415,7 @@ class NexusApp:
         visible = self.input_text[-(width - 2):]
         placeholder = "descreva sua tarefa... (/help)"
         self.safe_add(y, x + 1, visible or placeholder, curses.A_DIM if not visible else 0, width - 2)
-        self.safe_add(h - 2, 1, "Enter enviar · /tokens uso · /providers status · /result saída · Ctrl+C sair", self.color(7), w - 3)
+        self.safe_add(h - 2, 1, "Enter enviar · /plugins integrações · /tokens uso · /result saída · Ctrl+C sair", self.color(7), w - 3)
         try:
             self.stdscr.move(y, min(w - 2, x + 1 + len(visible)))
         except curses.error:

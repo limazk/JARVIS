@@ -1,7 +1,7 @@
 """Testes do NEXUS sem chamar APIs externas."""
 from nexus.online_router import parse_router_json
 from nexus.providers import discover, worker_prompt
-from nexus.router import choose_provider, classify, classify_with_confidence, local_route
+from nexus.router import choose_provider, classify, classify_with_confidence, infer_plugins, local_route
 
 
 def test_classifica_codigo_sem_llm():
@@ -111,3 +111,17 @@ def test_router_local_nunca_escolhe_grok_ou_mistral_como_worker():
     decision = local_route("corrija um bug Python", availability)
     assert decision.provider == "jarvis"
     assert decision.provider not in {"grok", "mistral"}
+
+
+def test_infer_plugins_detecta_notion_e_trello():
+    plugins = infer_plugins("atualize a documentação no Notion e crie um card no Trello")
+    assert "notion" in plugins
+    assert "trello" in plugins
+
+
+def test_rota_local_carrega_plugins_sem_gastar_router():
+    decision = local_route(
+        "veja o status do repositório no GitHub",
+        {"jarvis": True, "codex": True, "claude": True},
+    )
+    assert "github" in decision.plugins

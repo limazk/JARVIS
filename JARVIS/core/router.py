@@ -46,7 +46,10 @@ Sempre que o usuário contar um fato, dado ou preferência pessoal sobre ele mes
 (nome, apelido, onde mora ou trabalha, o que gosta/não gosta, ferramentas que usa,
 pessoas importantes para ele, rotinas, etc.), chame a ferramenta remember_fact para
 guardar isso — mesmo que ele não peça explicitamente para "lembrar". É melhor
-guardar um fato a mais do que esquecer algo que ele já contou."""
+guardar um fato a mais do que esquecer algo que ele já contou.
+Para serviços externos, use list_plugins/plugin_status para descobrir integrações e
+plugin_execute para executar uma capability real. Nunca peça nem exponha tokens/chaves
+de plugins no texto da conversa; as credenciais ficam dentro da camada de plugins."""
 
 
 def _build_system_prompt(response_mode: str = "text", current_mode: str = "NORMAL") -> str:

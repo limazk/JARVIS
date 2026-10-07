@@ -8,6 +8,7 @@ Estratégia de custo:
 """
 from __future__ import annotations
 
+import json
 import os
 import time
 from dataclasses import dataclass
@@ -17,6 +18,7 @@ from config.settings import settings
 from core.agent import JarvisAgent
 from memory import memory as long_term_memory
 from memory.database import get_connection, log_activity
+from plugins.broker import describe_plugins, execute_requests
 from nexus.online_router import OnlineRouterResult, verify_route
 from nexus.providers import discover, run_provider, worker_prompt
 from nexus.router import RoutingDecision, local_route
@@ -255,7 +257,11 @@ class NexusRuntime:
                 self._output(text)
             else:
                 memories = long_term_memory.recall_relevant(prompt, limit=5)
-                delegated_prompt = worker_prompt(prompt, memories)
+                plugin_context = (
+                    describe_plugins(self.plugin_registry, decision.plugins)
+                    if self.plugin_registry is not None else ""
+                )
+                delegated_prompt = worker_prompt(prompt, memories, plugin_context)
                 spec = self._providers.get(provider)
                 transport = spec.transport if spec else "?"
                 self._emit(
@@ -273,9 +279,44 @@ class NexusRuntime:
                     max_api_tokens=self.max_api_tokens,
                     on_line=self._output,
                 )
-                worker_tokens = run.total_tokens
+                worker_tokens += run.total_tokens
                 if spec is not None and spec.transport == "api":
                     api_calls += 1
+
+                # Workers externos não recebem credenciais. Quando precisam de
+                # uma integração, pedem uma capability por marcador NEXUS_PLUGIN.
+                # O broker executa no JARVIS com PermissionManager e devolve só o resultado.
+                if run.ok and self.plugin_registry is not None and decision.plugins:
+                    plugin_results = execute_requests(
+                        self.plugin_registry,
+                        run.text,
+                        allowed=set(decision.plugins),
+                    )
+                    if plugin_results:
+                        self._emit(
+                            "plugins",
+                            "executando",
+                            f"{len(plugin_results)} chamada(s) protegida(s)",
+                            provider,
+                        )
+                        followup = (
+                            "Continue a tarefa usando os resultados abaixo. "
+                            "Não repita chamadas já concluídas.\n\n"
+                            + json.dumps(plugin_results, ensure_ascii=False)[:12000]
+                        )
+                        second = run_provider(
+                            provider,
+                            followup,
+                            timeout=self.timeout,
+                            max_output_chars=self.max_output,
+                            max_api_tokens=self.max_api_tokens,
+                            on_line=self._output,
+                        )
+                        worker_tokens += second.total_tokens
+                        if spec is not None and spec.transport == "api":
+                            api_calls += 1
+                        if second.ok:
+                            run = second
 
                 if not run.ok:
                     self._emit(

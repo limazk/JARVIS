@@ -126,6 +126,7 @@ def _normalize_decision(
         source="online",
         reason=reason,
         verifier=verifier,
+        plugins=fallback.plugins,
         router_prompt_tokens=usage.prompt_tokens,
         router_completion_tokens=usage.completion_tokens,
     )

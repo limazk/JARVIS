@@ -19,6 +19,8 @@ from tools.base import Tool
 class ToolRegistry:
     def __init__(self) -> None:
         self._tools: dict[str, Tool] = {}
+        # Preenchido por plugins.bridge no fim de build_default_registry().
+        self.plugin_registry = None
 
     def register(self, tool: Tool) -> None:
         if tool.name in self._tools:
@@ -95,5 +97,10 @@ def build_default_registry(permissions: Optional[PermissionManager] = None) -> T
     # Módulos que precisam da instância de PermissionManager para checagem dinâmica.
     for module in (shell, github, mercadopago):
         module.register(registry, permissions)
+
+    # Plugins ficam por cima das Tools existentes. O bridge registra
+    # list_plugins/plugin_status/plugin_execute e mantém credenciais fora do LLM.
+    from plugins.bridge import attach_plugin_registry
+    attach_plugin_registry(registry, permissions)
 
     return registry
