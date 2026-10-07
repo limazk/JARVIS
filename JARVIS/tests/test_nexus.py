@@ -1,6 +1,6 @@
 """Testes do NEXUS sem chamar APIs externas."""
 from nexus.online_router import parse_router_json
-from nexus.providers import worker_prompt
+from nexus.providers import discover, worker_prompt
 from nexus.router import choose_provider, classify, classify_with_confidence, local_route
 
 
@@ -72,3 +72,42 @@ def test_worker_prompt_carrega_contexto_relevante_sem_historico_inteiro():
     assert "revise o módulo" in prompt
     assert "O usuário usa Linux." in prompt
     assert "Raiz do projeto" in prompt
+
+
+def test_grok_e_mistral_sao_somente_routers(monkeypatch):
+    monkeypatch.setenv("XAI_API_KEY", "test-xai")
+    monkeypatch.setenv("MISTRAL_API_KEY", "test-mistral")
+    providers = discover()
+    assert providers["grok"].routing_only is True
+    assert providers["mistral"].routing_only is True
+
+
+def test_workers_online_nao_sao_routers_exclusivos(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-openrouter")
+    monkeypatch.setenv("TOGETHER_API_KEY", "test-together")
+    monkeypatch.setenv("CEREBRAS_API_KEY", "test-cerebras")
+    providers = discover()
+    assert providers["openrouter"].routing_only is False
+    assert providers["together"].routing_only is False
+    assert providers["cerebras"].routing_only is False
+
+
+def test_router_local_nunca_escolhe_grok_ou_mistral_como_worker():
+    availability = {
+        "jarvis": True,
+        "grok": True,
+        "mistral": True,
+        "codex": False,
+        "claude": False,
+        "gemini_cli": False,
+        "gemini": False,
+        "groq": False,
+        "openrouter": False,
+        "cloudflare": False,
+        "together": False,
+        "cerebras": False,
+        "ollama": False,
+    }
+    decision = local_route("corrija um bug Python", availability)
+    assert decision.provider == "jarvis"
+    assert decision.provider not in {"grok", "mistral"}
