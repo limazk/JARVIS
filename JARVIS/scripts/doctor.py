@@ -84,6 +84,20 @@ def run_doctor() -> int:
     state, detail = provider.health_check()
     _line(server_state == OllamaHealth.ONLINE, "Ollama", server_detail)
     _line(state == OllamaHealth.MODEL_READY, settings.local_llm_model, detail)
+
+    try:
+        from nexus.providers import discover as discover_nexus
+
+        for nexus_provider in discover_nexus().values():
+            _line(
+                nexus_provider.available,
+                f"NEXUS {nexus_provider.label}",
+                nexus_provider.model,
+            )
+        _line(True, "NEXUS JARVIS interno", "memória + tools + permissões")
+    except Exception as exc:
+        _line(False, "NEXUS", str(exc))
+
     try:
         health = RotinaClient(timeout=2).health()
         _line(health.get("status") == "ok", "ROTINA API", settings.rotina_url)
