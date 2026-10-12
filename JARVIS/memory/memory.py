@@ -30,7 +30,14 @@ _SLOTS = (
     ("editor", r"\b(?:meu editor|minha ide)\b"),
     ("cor_favorita", r"\b(?:minha cor favorita|cor preferida)\b"),
 )
-_SECRETS = re.compile(r"\b(senha|password|token secreto|chave de api|api key|cvv|numero do cartao)\b")
+# Categorias sensíveis ficam fora da memória duradoura por padrão.
+# O histórico bruto de conversas tem regras separadas (ver README).
+_SENSITIVE = re.compile(
+    r"\b(?:senha|password|token|api key|chave de api|cvv|cartao|"
+    r"cpf|rg|passaporte|endereco residencial|conta bancaria|"
+    r"saude|diagnostico|doenca|medicamento|historico medico|"
+    r"religiao|partido politico|orientacao sexual|sexualidade)\b"
+)
 
 
 def _normalize(text: str) -> str:
@@ -64,8 +71,8 @@ def remember_fact(fact: str, **_: object) -> ToolResult:
     clean = fact.strip()
     if not clean:
         return ToolResult(success=False, message="Não há fato para memorizar.")
-    if _SECRETS.search(_normalize(clean)):
-        return ToolResult(success=False, message="Não guardo senhas, tokens nem credenciais na memória.")
+    if _SENSITIVE.search(_normalize(clean)):
+        return ToolResult(success=False, message="Não guardo credenciais nem informações sensíveis na memória permanente.")
     key = _extract_key(clean)
     slot = _slot(clean)
     with get_connection() as conn:
