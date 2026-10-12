@@ -102,6 +102,9 @@ class Settings:
     wake_greeting: str = field(default_factory=lambda: _str("WAKE_GREETING", ""))
     allow_critical_actions: bool = field(default_factory=lambda: _bool("ALLOW_CRITICAL_ACTIONS", False))
 
+    # Narração opcional apenas para consultas não determinísticas (pode gastar 1 chamada extra).
+    natural_tool_responses: bool = field(default_factory=lambda: _bool("NATURAL_TOOL_RESPONSES", True))
+
     # LLM
     llm_provider: str = field(default_factory=lambda: _str("LLM_PROVIDER", "local"))
     anthropic_api_key: str = field(default_factory=lambda: _str("ANTHROPIC_API_KEY", ""))
