@@ -224,6 +224,16 @@ class Router:
             tool_input = decision.tool_input
 
         result = self._execute_tool(tool_name, tool_input)
+        if tool_name == "forget_fact" and result.success:
+            # Uma informação removida não deve reaparecer por recapitulação
+            # em RAM ou no resumo persistente. Histórico bruto fica separado;
+            # o usuário é informado dessa distinção pela ferramenta/README.
+            self.context.clear()
+            try:
+                conversation_log.save_summary("")
+                self._persisted_summary = ""
+            except Exception:
+                logger.warning("Não foi possível limpar o resumo persistente.", exc_info=True)
         result.reply = self.composer.compose(
             tool_name=tool_name,
             tool_result=result.reply,
