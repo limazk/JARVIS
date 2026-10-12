@@ -1,0 +1,38 @@
+name: Jarvis personality and memory V2
+
+on:
+  push:
+    branches:
+      - feature/personality-memory-v2
+  pull_request:
+    paths:
+      - "JARVIS/core/**"
+      - "JARVIS/memory/**"
+      - "JARVIS/personality/**"
+      - "JARVIS/voice/**"
+      - "JARVIS/interface/**"
+      - "JARVIS/interface_web/**"
+      - "JARVIS/tests/**"
+      - ".github/workflows/jarvis-personality-v2.yml"
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install lightweight test dependencies
+        run: python -m pip install pytest python-dotenv requests psutil pillow
+      - name: Compile changed Python modules
+        run: python -m compileall -q JARVIS/core JARVIS/personality JARVIS/memory JARVIS/voice JARVIS/interface JARVIS/interface_web
+      - name: Regression tests
+        working-directory: JARVIS
+        run: |
+          python -m pytest -q \
+            tests/test_personality.py tests/test_personality_v2.py \
+            tests/test_context_v2.py tests/test_memory.py tests/test_memory_v2.py \
+            tests/test_response_composer.py tests/test_voice_formatting_v2.py \
+            tests/test_fast_path.py tests/test_router.py tests/test_text_to_speech.py \
+            tests/test_web_bridge.py
