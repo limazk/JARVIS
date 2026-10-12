@@ -117,6 +117,11 @@ def speak(text: str, blocking: bool = True) -> None:
     Edge de novo.
     """
     from voice.audio_player import player
+    from voice.formatting import prepare_speech
+
+    text = prepare_speech(text)
+    if not text:
+        return
 
     provider = get_tts_provider()
     audio_path = provider.synthesize(text)
