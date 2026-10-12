@@ -47,7 +47,7 @@ class ResponseComposer:
         if local_intent or tool_name not in _NARRATABLE:
             return engine.apply_direct(raw, response_mode=response_mode) if local_intent else raw
 
-        if not getattr(settings, "natural_tool_responses", True) or len(raw) > 2800:
+        if not getattr(settings, "natural_tool_responses", False) or len(raw) > 2800:
             return raw
         # Decisão textual SEM ferramentas. A narração nunca confirma uma ação nova.
         prompt = (
