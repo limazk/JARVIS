@@ -166,7 +166,7 @@ def forget_fact(fact: str, **_: object) -> ToolResult:
             if term in _normalize(row["value"]) or term == _normalize(row["key"]):
                 conn.execute("DELETE FROM memories WHERE id = ?", (row["id"],))
                 count += 1
-    return ToolResult(success=True, message=f"{count} memória(s) removida(s).")
+    return ToolResult(success=True, message=(f"{count} memória(s) removida(s). O histórico bruto de conversas não foi apagado."))
 
 
 def register(registry) -> None:
