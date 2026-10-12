@@ -24,3 +24,23 @@ def recent_messages(limit: int = 50) -> list[dict]:
             "SELECT role, content, created_at FROM conversations ORDER BY id DESC LIMIT ?", (limit,)
         ).fetchall()
     return [dict(r) for r in reversed(rows)]
+
+
+def load_summary() -> str:
+    """Recupera apenas o resumo limitado; o histórico completo não vai para o LLM."""
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT value FROM preferences WHERE key = 'conversation_summary'"
+        ).fetchone()
+    return row["value"] if row else ""
+
+
+def save_summary(text: str) -> None:
+    """Salva o resumo extrativo para sobreviver a reinícios."""
+    with get_connection() as conn:
+        conn.execute(
+            "INSERT INTO preferences(key, value) VALUES('conversation_summary', ?) "
+            "ON CONFLICT(key) DO UPDATE SET value = excluded.value, "
+            "updated_at = datetime('now', 'localtime')",
+            (text[-1800:],),
+        )
