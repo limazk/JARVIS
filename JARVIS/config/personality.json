@@ -4,11 +4,12 @@
     "language": "pt-BR"
   },
   "personality": {
-    "humor": 0.30,
-    "sarcasm": 0.10,
-    "formality": 0.50,
-    "verbosity": 0.30,
-    "initiative": 0.65
+    "humor": 0.35,
+    "sarcasm": 0.15,
+    "formality": 0.55,
+    "verbosity": 0.5,
+    "initiative": 0.75,
+    "empathy": 0.75
   },
   "behavior": {
     "concise_voice": true,
