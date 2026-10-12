@@ -148,7 +148,10 @@ class Router:
                     )
             except Exception:
                 logger.warning("Não foi possível salvar o modo.", exc_info=True)
-            reply = f"Modo {requested_mode.lower()} ativado."
+            labels = {"NORMAL": "normal", "FOCUS": "foco", "STUDY": "estudo",
+                      "PROGRAMMING": "programação", "WORK": "trabalho",
+                      "WORKOUT": "treino", "NIGHT": "noite", "GAMES": "jogos"}
+            reply = f"Modo {labels[requested_mode]} ativado."
             self._record_assistant(reply)
             return RouterResult(reply=reply)
 
