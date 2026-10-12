@@ -95,6 +95,7 @@ def run_voice_mode() -> None:
     from voice.audio_player import player
     from voice.listener import listener
     from voice.text_to_speech import speak
+    from voice.session import capture_command
     from voice.wake_word import WakeWordDetector
 
     print(f"\n{settings.jarvis_name.upper()} — modo voz. Ctrl+C para encerrar.\n")
@@ -149,8 +150,11 @@ def run_voice_mode() -> None:
                     speak(greeting, blocking=True)
 
                 print("(ouvindo...)")
-                text = listener.listen_once(
-                    phrase_time_limit=settings.wake_command_phrase_time_limit
+                text = capture_command(
+                    listener,
+                    phrase_time_limit=settings.wake_command_phrase_time_limit,
+                    on_retry=lambda message: speak(message, blocking=True)
+                    if settings.voice_enabled else None,
                 )
 
             if not text:
