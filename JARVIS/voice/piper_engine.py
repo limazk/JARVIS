@@ -90,6 +90,7 @@ def synthesize_piper(text: str) -> Path | None:
     # Quando o piper vem do PATH, a pasta atual do JARVIS não é alterada.
     bundle_dir = default_bin_path().parent
     cwd = str(bundle_dir) if binary == default_bin_path() else None
+    succeeded = False
     try:
         process = subprocess.run(
             [
@@ -120,12 +121,12 @@ def synthesize_piper(text: str) -> Path | None:
             return None
         # Reprodução pode ser assíncrona, então não apagar antes do pygame.
         atexit.register(output.unlink, missing_ok=True)
+        succeeded = True
         return output
     except (OSError, subprocess.SubprocessError, ValueError) as exc:
         logger.warning("Falha ao executar Piper: %s", exc)
         return None
     finally:
-        # Em caso de sucesso, o arquivo fica até o encerramento do processo.
-        # Em caso de falha, arquivo temporário incompleto é removido.
-        # O sucesso é indicado pela existência de registro no atexit abaixo.
-        pass
+        # Arquivos incompletos não se acumulam após falhas/timeout.
+        if not succeeded:
+            output.unlink(missing_ok=True)
