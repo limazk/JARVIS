@@ -24,9 +24,9 @@ modificar a camada de permissões nem o roteamento de comandos simples.
 - **Compositor de respostas**: consultas de leitura selecionadas podem receber
   uma segunda chamada textual sem tools para tornar o resultado mais natural,
   com verificação básica de fidelidade numérica e dos links. Comandos locais,
-  mutações e ações de risco nunca são narrados por outra IA. Coloque
-  `NATURAL_TOOL_RESPONSES=false` no `.env` para desativar a narração e
-  evitar qualquer chamada extra.
+  mutações e ações de risco nunca são narrados por outra IA. Por padrão a narração está desativada (`NATURAL_TOOL_RESPONSES=false`).
+  Ative manualmente com `true` se aceitar uma chamada extra de LLM e
+  risco residual de distorção, mesmo com verificações de fidelidade.
 - **Voz**: pedidos capturados por microfone usam `response_mode="voice"`
   e o TTS limpa marcações, blocos de código e links antes de falar.
   Mensagens digitadas continuam com detalhamento apropriado a texto.
