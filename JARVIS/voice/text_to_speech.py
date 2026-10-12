@@ -5,7 +5,8 @@ Mesma ideia do core/brain.py: uma interface comum (TTSProvider) com
 implementações trocáveis via TTS_PROVIDER no .env.
 
     edge        -> Edge TTS (Microsoft, grátis, vozes neurais pt-BR) [padrão]
-    pyttsx3     -> 100% offline, qualidade robótica, sempre funciona
+    espeak      -> 100% offline no Linux (espeak-ng/espeak via WAV reproduzido no pygame)
+    pyttsx3     -> fallback legado, qualidade robótica, pode falhar em Python recente
     elevenlabs  -> pago, melhor qualidade (precisa de ELEVENLABS_API_KEY)
 
 As implementações que geram arquivo (edge/elevenlabs) devolvem o
@@ -17,7 +18,12 @@ dois provedores).
 """
 from __future__ import annotations
 
+import atexit
 import logging
+import os
+import platform
+import shutil
+import subprocess
 import tempfile
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -60,6 +66,49 @@ class EdgeTTSProvider(TTSProvider):
             return None
 
 
+class EspeakProvider(TTSProvider):
+    """Gera WAV offline no Linux; evita callback frágil do pyttsx3/espeak.
+
+    Usa --stdin para que o texto seja dado, nunca interpretado como argumento
+    de shell. A reprodução continua pelo AudioPlayer, permitindo interrupção.
+    """
+
+    def synthesize(self, text: str) -> Optional[Path]:
+        if platform.system() != "Linux":
+            return None
+        executable = shutil.which("espeak-ng") or shutil.which("espeak")
+        if not executable:
+            logger.info("espeak-ng/espeak indisponível: sudo apt install espeak-ng")
+            return None
+        fd, name = tempfile.mkstemp(prefix="jarvis_espeak_", suffix=".wav")
+        path = Path(name)
+        try:
+            with os.fdopen(fd, "wb") as output:
+                proc = subprocess.run(
+                    [executable, "-v", "pt-br", "-s", "165", "--stdout", "--stdin"],
+                    input=text.encode("utf-8"),
+                    stdout=output,
+                    stderr=subprocess.PIPE,
+                    timeout=30,
+                    check=False,
+                )
+            if proc.returncode != 0 or path.stat().st_size < 44:
+                logger.warning(
+                    "Falha ao gerar WAV com eSpeak (código %s): %s",
+                    proc.returncode, proc.stderr.decode("utf-8", "replace")[:200],
+                )
+                path.unlink(missing_ok=True)
+                return None
+            # A reprodução pode ser não bloqueante; mantenha o arquivo até
+            # encerrar o processo para não interromper o pygame.
+            atexit.register(path.unlink, missing_ok=True)
+            return path
+        except (OSError, subprocess.SubprocessError) as exc:
+            logger.warning("eSpeak local indisponível (%s).", exc)
+            path.unlink(missing_ok=True)
+            return None
+
+
 class Pyttsx3Provider(TTSProvider):
     def synthesize(self, text: str) -> Optional[Path]:
         try:
@@ -99,7 +148,7 @@ class ElevenLabsProvider(TTSProvider):
 
 
 def get_tts_provider() -> TTSProvider:
-    providers = {"edge": EdgeTTSProvider, "pyttsx3": Pyttsx3Provider, "elevenlabs": ElevenLabsProvider}
+    providers = {"edge": EdgeTTSProvider, "espeak": EspeakProvider, "pyttsx3": Pyttsx3Provider, "elevenlabs": ElevenLabsProvider}
     provider_cls = providers.get(settings.tts_provider, EdgeTTSProvider)
     return provider_cls()
 
@@ -107,10 +156,9 @@ def get_tts_provider() -> TTSProvider:
 def speak(text: str, blocking: bool = True) -> None:
     """
     Sintetiza e toca a fala. Se o provedor configurado falhar, tenta os
-    próximos da cadeia de fallback: (ElevenLabs, se era o configurado) ->
-    Edge TTS (grátis) -> pyttsx3 (100% offline, não depende de rede nem de
-    nenhum serviço externo — por isso é sempre o último da cadeia e nunca
-    falha silenciosamente). O Edge TTS é uma API não-oficial que a Microsoft
+    próximos da cadeia de fallback: ElevenLabs (se configurado) -> Edge TTS
+    -> eSpeak offline (Linux) -> pyttsx3 legado. A disponibilidade do
+    eSpeak depende de instalação local e reprodução WAV pelo AudioPlayer. O Edge TTS é uma API não-oficial que a Microsoft
     quebra de vez em quando (erro "403 Invalid response status" — nesse caso,
     atualize o pacote com `pip install -U edge-tts`) — quando ele mesmo é o
     provedor configurado e falha, pula direto pro pyttsx3 em vez de tentar o
@@ -126,13 +174,17 @@ def speak(text: str, blocking: bool = True) -> None:
     provider = get_tts_provider()
     audio_path = provider.synthesize(text)
 
-    if audio_path is None and not isinstance(provider, Pyttsx3Provider):
+    if audio_path is None and not isinstance(provider, (Pyttsx3Provider, EspeakProvider)):
         if not isinstance(provider, EdgeTTSProvider):
             logger.info("Provedor de TTS configurado falhou; tentando fallback Edge TTS.")
             audio_path = EdgeTTSProvider().synthesize(text)
 
         if audio_path is None:
-            logger.info("Edge TTS indisponível; tentando fallback pyttsx3 (100%% offline).")
+            logger.info("Edge TTS indisponível; tentando voz eSpeak local (Linux).")
+            audio_path = EspeakProvider().synthesize(text)
+
+        if audio_path is None:
+            logger.info("Voz eSpeak indisponível; tentando fallback pyttsx3.")
             trace = current_trace()
             if trace is not None:
                 trace.mark_elapsed("tts_start_duration")

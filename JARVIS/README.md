@@ -50,6 +50,27 @@ Teste rápido: dentro de `JARVIS/`, execute
 tests/test_memory_v2.py tests/test_context_v2.py tests/test_response_composer.py
 tests/test_voice_formatting_v2.py`.
 
+### Saída de voz no Linux (Edge TTS 403)
+
+Se o JARVIS imprime respostas como "Jarvis: São duas horas", mas não fala,
+o problema pode ser o Edge TTS (HTTP 403), não o reconhecimento de voz.
+O pyttsx3/eSpeak também pode apresentar erro de callback no Python 3.14.
+
+O modo de voz agora tenta **Edge TTS -> eSpeak local -> pyttsx3**.
+Para instalar o sintetizador local (Kali, Ubuntu e Mint):
+
+~~~bash
+sudo apt update && sudo apt install -y espeak-ng
+~~~
+
+Mantenha TTS_PROVIDER=edge no .env para priorizar a voz neural online
+e usar a alternativa local apenas quando ela falhar. Para nunca consultar
+o serviço de fala da Microsoft, defina TTS_PROVIDER=espeak no .env.
+Nesse modo, a voz é robótica, mas funciona offline se espeak-ng/espeak
+e a saída de áudio do pygame estiverem configurados.
+Teste sem a escuta: python -c "from voice.text_to_speech import speak; speak('Teste de voz')".
+O eSpeak gera WAV e o AudioPlayer mantém a capacidade de interromper a fala.
+
 ## Funcionalidades
 
 - **Texto, voz e Discord**: `python main.py --text`, `python main.py --voice`

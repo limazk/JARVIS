@@ -12,6 +12,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
+@pytest.fixture(autouse=True)
+def _legacy_tests_without_espeak(monkeypatch):
+    """Testa a cadeia legada em máquinas com e sem binário espeak instalado."""
+    monkeypatch.setattr(tts.EspeakProvider, "synthesize", lambda self, text: None)
+
 from voice import text_to_speech as tts
 from voice.audio_player import player as audio_player
 
