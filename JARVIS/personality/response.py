@@ -25,7 +25,7 @@ def _faithful(original: str, proposed: str) -> bool:
         return False
     original_numbers = set(_NUMBERS.findall(original))
     proposed_numbers = set(_NUMBERS.findall(proposed))
-    if not proposed_numbers.issubset(original_numbers):
+    if proposed_numbers != original_numbers:
         return False
     return all(url in proposed for url in _URLS.findall(original))
 
@@ -37,12 +37,13 @@ class ResponseComposer:
     def compose(
         self, *, tool_name: str | None, tool_result: str, success: bool,
         user_text: str, response_mode: str, local_intent: bool = False,
+        current_mode: str = "NORMAL",
     ) -> str:
         """Respeita fatos das ferramentas e não adiciona chamadas em caminhos locais."""
         raw = (tool_result or "").strip()
         if not raw or not success:
             return raw
-        engine = PersonalityEngine()
+        engine = PersonalityEngine(current_mode=current_mode)
         if local_intent or tool_name not in _NARRATABLE:
             return engine.apply_direct(raw, response_mode=response_mode) if local_intent else raw
 
