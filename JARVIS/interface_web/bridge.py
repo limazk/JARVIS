@@ -218,14 +218,14 @@ class WebBridge:
                 self._chat_unread = True
         return msg
 
-    def send_text(self, text: str) -> dict:
+    def send_text(self, text: str, response_mode: str = "text") -> dict:
         text = (text or "").strip()
         if not text:
             return {"ok": False}
         self._append_message("Você", text)
 
         def worker() -> None:
-            reply = self.agent.process(text)
+            reply = self.agent.process(text, response_mode=response_mode)
             self._append_message(settings.jarvis_name, reply)
             if settings.voice_enabled:
                 self._speak_safely(reply)
@@ -246,7 +246,7 @@ class WebBridge:
                 self._append_message(settings.jarvis_name, f"Erro no microfone: {exc}")
                 return
             if outcome.text:
-                self.send_text(outcome.text)
+                self.send_text(outcome.text, response_mode="voice")
                 return
             # Antes, qualquer falha aqui (sem fala detectada, fala não
             # entendida, erro de captura) ficava muda — a pessoa falava e
@@ -352,7 +352,7 @@ class WebBridge:
                 text = outcome.text
 
             self._append_message("Você", text)
-            reply = self.agent.process(text)
+            reply = self.agent.process(text, response_mode="voice")
             self._append_message(settings.jarvis_name, reply)
             if settings.voice_enabled:
                 self._speak_safely(reply)

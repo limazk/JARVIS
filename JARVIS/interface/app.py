@@ -250,11 +250,11 @@ class JarvisApp:
 
     # ----- ponte com o agente -----
 
-    def _handle_send(self, text: str) -> None:
+    def _handle_send(self, text: str, response_mode: str = "text") -> None:
         self._append_chat("Você", text)
 
         def worker() -> None:
-            reply = self.agent.process(text)
+            reply = self.agent.process(text, response_mode=response_mode)
             self.root.after(0, lambda: self._on_reply(reply))
 
         threading.Thread(target=worker, daemon=True).start()
@@ -282,7 +282,7 @@ class JarvisApp:
                 self.root.after(0, lambda: self._append_chat(settings.jarvis_name, f"Erro no microfone: {exc}"))
                 return
             if outcome.text:
-                self.root.after(0, lambda: self._handle_send(outcome.text))
+                self.root.after(0, lambda: self._handle_send(outcome.text, response_mode="voice"))
                 return
             # Antes, qualquer falha aqui ficava muda (sem fala detectada, fala
             # não entendida, erro de captura) — a pessoa falava e nada
@@ -385,7 +385,7 @@ class JarvisApp:
                 text = outcome.text
 
             self.root.after(0, lambda: self._append_chat("Você", text))
-            reply = self.agent.process(text)
+            reply = self.agent.process(text, response_mode="voice")
             self.root.after(0, lambda: self._on_reply(reply))
         finally:
             self._wake_handling_lock.release()

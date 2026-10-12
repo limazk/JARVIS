@@ -16,9 +16,11 @@ def test_site_conhecido_esta_no_dicionario_de_aliases():
     assert KNOWN_WEBSITES["github"].startswith("https://")
 
 
-def test_abrir_no_linux_procura_binario_e_nao_finge_sucesso():
+def test_abrir_no_linux_procura_binario_e_nao_finge_sucesso(monkeypatch):
     if platform.system() == "Windows":
         return  # este teste é sobre o comportamento em outros SOs
+    # Simula ausência do navegador independentemente do software do runner.
+    monkeypatch.setattr("tools.apps.shutil.which", lambda _name: None)
     result = open_application(app_name="chrome")
     assert result.success is False
     assert "não está instalado" in result.message.lower() or "não consegui" in result.message.lower()
