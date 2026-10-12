@@ -36,3 +36,6 @@ jobs:
             tests/test_response_composer.py tests/test_voice_formatting_v2.py \
             tests/test_fast_path.py tests/test_router.py tests/test_text_to_speech.py \
             tests/test_web_bridge.py
+      - name: Complete unit test suite
+        working-directory: JARVIS
+        run: python -m pytest -q
