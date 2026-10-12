@@ -1,10 +1,6 @@
-"""
-Memória de curto prazo (short-term memory) — seção 30 do spec.
+"""Contexto de conversa: janela curta + resumo extrativo dos trechos evictados.
 
-Guarda apenas as últimas N mensagens da conversa atual, em RAM.
-Isso é o que vai para o LLM como contexto — nunca o histórico
-inteiro. A memória de longo prazo (fatos que sobrevivem entre
-execuções) fica em memory/memory.py, usando SQLite (ETAPA 4).
+Não chama IA, não inventa fatos e nunca injeta o histórico inteiro no prompt.
 """
 from __future__ import annotations
 
@@ -24,21 +20,43 @@ class Message:
 
 
 class ConversationContext:
-    """Buffer circular com as últimas `max_messages` mensagens da sessão atual."""
+    """Buffer de curto prazo com notas compactas, recuperáveis entre reinícios."""
 
-    def __init__(self, max_messages: int = 12) -> None:
+    def __init__(self, max_messages: int = 12, summary_items: int = 8) -> None:
+        if max_messages < 2:
+            raise ValueError("max_messages deve ser >= 2")
         self.max_messages = max_messages
         self._buffer: Deque[Message] = deque(maxlen=max_messages)
+        self._notes: Deque[str] = deque(maxlen=summary_items)
 
     def add(self, role: Role, content: str) -> None:
+        if len(self._buffer) >= self.max_messages:
+            old = self._buffer.popleft()
+            if old.role in ("user", "assistant"):
+                compact = " ".join(old.content.split())[:180]
+                if compact:
+                    label = "Usuário" if old.role == "user" else "Assistente"
+                    self._notes.append(f"{label}: {compact}")
         self._buffer.append(Message(role=role, content=content))
 
     def recent(self) -> list[Message]:
         return list(self._buffer)
 
     def as_llm_messages(self) -> list[dict]:
-        """Formato aceito pelas APIs de LLM (role/content), sem mensagens 'system'."""
-        return [{"role": m.role, "content": m.content} for m in self._buffer if m.role != "system"]
+        return [{"role": m.role, "content": m.content}
+                for m in self._buffer if m.role != "system"]
+
+    def summary_text(self) -> str:
+        """Trechos anteriores de contexto, sem inferências ou instruções novas."""
+        return "\n".join(self._notes)
+
+    def restore_summary(self, text: str) -> None:
+        self._notes.clear()
+        for line in text.splitlines()[-self._notes.maxlen:]:
+            line = " ".join(line.split())[:205]
+            if line and line.startswith(("Usuário:", "Assistente:")):
+                self._notes.append(line)
 
     def clear(self) -> None:
         self._buffer.clear()
+        self._notes.clear()
