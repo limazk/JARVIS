@@ -103,7 +103,7 @@ class Settings:
     allow_critical_actions: bool = field(default_factory=lambda: _bool("ALLOW_CRITICAL_ACTIONS", False))
 
     # Narração opcional apenas para consultas não determinísticas (pode gastar 1 chamada extra).
-    natural_tool_responses: bool = field(default_factory=lambda: _bool("NATURAL_TOOL_RESPONSES", True))
+    natural_tool_responses: bool = field(default_factory=lambda: _bool("NATURAL_TOOL_RESPONSES", False))
 
     # LLM
     llm_provider: str = field(default_factory=lambda: _str("LLM_PROVIDER", "local"))
