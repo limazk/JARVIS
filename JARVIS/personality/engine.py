@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import re
+import unicodedata
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
@@ -31,6 +32,31 @@ _MODE_GUIDANCE = {
     "NIGHT": "Use tom calmo, frases enxutas e menos estímulos; não presuma o estado emocional do usuário.",
     "GAMES": "Permita leve humor, mantendo instruções objetivas e precisas.",
 }
+
+
+_MODE_ALIASES = {
+    "normal": "NORMAL", "padrao": "NORMAL",
+    "foco": "FOCUS", "concentracao": "FOCUS",
+    "estudo": "STUDY", "estudar": "STUDY",
+    "programacao": "PROGRAMMING", "codigo": "PROGRAMMING",
+    "trabalho": "WORK", "profissional": "WORK",
+    "treino": "WORKOUT", "academia": "WORKOUT",
+    "noite": "NIGHT", "noturno": "NIGHT",
+    "jogos": "GAMES", "games": "GAMES",
+}
+
+
+def parse_mode_command(text: str) -> str | None:
+    """Detecta pedidos inequívocos para mudar o modo, sem acionar LLM."""
+    normalized = unicodedata.normalize("NFKD", text.casefold())
+    normalized = "".join(c for c in normalized if not unicodedata.combining(c))
+    normalized = re.sub(r"^(?:ei\s+)?jarvis[,!: ]*", "", normalized.strip())
+    matched = re.fullmatch(
+        r"(?:(?:ative|ativa|ativar|entre no|entrar no|mude para o|"
+        r"mudar para o|troque para o|quero|usar o)\s+)?"
+        r"(?:o\s+)?modo\s+([a-z]+)[.!]?", normalized,
+    )
+    return _MODE_ALIASES.get(matched.group(1)) if matched else None
 
 
 def _level(config: dict, key: str, default: float) -> float:
