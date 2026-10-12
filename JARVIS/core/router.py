@@ -24,7 +24,6 @@ from core.intent import match_local_intent
 from core.permissions import PermissionDenied, PermissionManager
 from core.performance import measure
 from core.specialists import pick_specialist
-from personality.engine import PersonalityEngine
 from personality.response import ResponseComposer
 from memory import conversations as conversation_log
 from memory import memory as long_term_memory
@@ -77,7 +76,7 @@ def _build_system_prompt(response_mode: str = "text", current_mode: str = "NORMA
     if settings.user_title.strip():
         title = settings.user_title.strip()
         prompt += (
-            f"\n\nSempre se dirija ao usuário chamando-o de \"{title}\" "
+            f"\n\nUse a forma de tratamento \"{title}\" em saudações ou quando soar natural; "
             f"(ex.: \"Sim, {title}.\", \"Encontrei isso, {title}.\", \"Pronto, {title}.\"). "
             f"Use \"{title}\" em vez do nome dele ou de qualquer outro pronome de tratamento, "
             f"em toda resposta onde fizer sentido dirigir-se a ele diretamente."
