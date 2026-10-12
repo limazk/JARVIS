@@ -97,7 +97,7 @@ def recall_relevant(query: str, limit: int = 5) -> list[str]:
             # FTS5 opcional: ativado apenas em instalações SQLite com suporte.
             match = " OR ".join('"' + word.replace('"', '') + '"' for word in terms)
             candidates = conn.execute(
-                "SELECT m.id, m.key, m.value FROM memories_fts f "
+                "SELECT m.id, m.key, m.value FROM memories_fts "
                 "JOIN memories m ON m.id = f.rowid "
                 "WHERE memories_fts MATCH ? LIMIT 250", (match,)
             ).fetchall()
