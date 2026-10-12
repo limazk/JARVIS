@@ -24,7 +24,7 @@ def test_mode_switch_is_local_and_changes_next_prompt():
     llm = _FakeLLM()
     router = _router(llm)
     response = router.handle("Jarvis, ativa modo estudo")
-    assert "study" in response.reply.lower()
+    assert "estudo" in response.reply.lower()
     assert llm.calls == 0
     router.handle("me conte uma curiosidade bem aleatória")
     assert "Modo comportamental atual: STUDY" in llm.prompt
