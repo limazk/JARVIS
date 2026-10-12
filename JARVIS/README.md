@@ -14,41 +14,41 @@ Esta versão introduz quatro melhorias incrementais ao motor conversacional sem
 modificar a camada de permissões nem o roteamento de comandos simples.
 
 - **Personalidade**: ajuste os valores entre 0 e 1 em
-  \`config/personality.json\` (humor, sarcasm, formality, verbosity,
+  `config/personality.json` (humor, sarcasm, formality, verbosity,
   initiative, empathy). Eles influenciam o prompt de todas as respostas LLM;
   respostas diretas locais continuam determinísticas.
-- **Modos ativos**: diga \`Jarvis, ativa modo estudo\`, \`modo foco\`,
-  \`modo programação\`, \`modo trabalho\`, \`modo treino\`, \`modo noite\`,
-  \`modo jogos\` ou \`modo normal\`. O modo é salvo no SQLite e restaurado
+- **Modos ativos**: diga `Jarvis, ativa modo estudo`, `modo foco`,
+  `modo programação`, `modo trabalho`, `modo treino`, `modo noite`,
+  `modo jogos` ou `modo normal`. O modo é salvo no SQLite e restaurado
   ao reiniciar. Trocar de modo não gasta tokens.
 - **Compositor de respostas**: consultas de leitura selecionadas podem receber
   uma segunda chamada textual sem tools para tornar o resultado mais natural,
   com verificação básica de fidelidade numérica e dos links. Comandos locais,
   mutações e ações de risco nunca são narrados por outra IA. Coloque
-  \`NATURAL_TOOL_RESPONSES=false\` no \`.env\` para desativar a narração e
+  `NATURAL_TOOL_RESPONSES=false` no `.env` para desativar a narração e
   evitar qualquer chamada extra.
-- **Voz**: pedidos capturados por microfone usam \`response_mode="voice"\`
+- **Voz**: pedidos capturados por microfone usam `response_mode="voice"`
   e o TTS limpa marcações, blocos de código e links antes de falar.
   Mensagens digitadas continuam com detalhamento apropriado a texto.
 - **Memória**: a busca tenta FTS5 local com suporte a sinônimos e faz fallback
   para LIKE quando necessário. Atualizações de cidade, editor e cor favorita
   substituem versões anteriores, sem manter duas respostas conflitantes.
-  \`forget_fact\` permite remover um fato da memória de longo prazo.
-  Credenciais explícitas não são armazenadas por \`remember_fact\`.
+  `forget_fact` permite remover um fato da memória de longo prazo.
+  Credenciais explícitas não são armazenadas por `remember_fact`.
 - **Resumo de conversa**: trechos antigos (até oito notas compactas) são
-  extraídos da sessão e guardados na tabela \`preferences\` do SQLite.
+  extraídos da sessão e guardados na tabela `preferences` do SQLite.
   É um resumo **extrativo**, não uma sumarização semântica por IA.
   O histórico completo continua separado e não é enviado ao LLM.
 
-**Privacidade**: apagar um fato com \`forget_fact\` não apaga automaticamente
+**Privacidade**: apagar um fato com `forget_fact` não apaga automaticamente
 o log de conversas ou o resumo, que possuem armazenamento separado. Consulte
-\`memory/conversations.py\` para gerenciá-los. Não guarde senhas ou tokens
+`memory/conversations.py` para gerenciá-los. Não guarde senhas ou tokens
 em lembretes, notas nem mensagens de chat.
 
-Teste rápido: dentro de \`JARVIS/\`, execute
-\`python -m pytest -q tests/test_personality_v2.py tests/test_modes_runtime.py
+Teste rápido: dentro de `JARVIS/`, execute
+`python -m pytest -q tests/test_personality_v2.py tests/test_modes_runtime.py
 tests/test_memory_v2.py tests/test_context_v2.py tests/test_response_composer.py
-tests/test_voice_formatting_v2.py\`.
+tests/test_voice_formatting_v2.py`.
 
 ## Funcionalidades
 
