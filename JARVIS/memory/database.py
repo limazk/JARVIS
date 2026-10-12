@@ -69,6 +69,37 @@ def _db_path() -> Path:
 def init_db() -> None:
     with _lock, sqlite3.connect(_db_path()) as conn:
         conn.executescript(_SCHEMA)
+        # Índice FTS5 opcional com sincronização por triggers. Recria conteúdo
+        # existente somente na primeira migração; instalações sem FTS5 seguem
+        # funcionando via LIKE.
+        try:
+            existed = conn.execute(
+                "SELECT 1 FROM sqlite_master WHERE name = 'memories_fts'"
+            ).fetchone() is not None
+            conn.executescript("""
+                CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts USING fts5(
+                    key, value, content='memories', content_rowid='id',
+                    tokenize='unicode61 remove_diacritics 2'
+                );
+                CREATE TRIGGER IF NOT EXISTS memories_fts_ai AFTER INSERT ON memories BEGIN
+                    INSERT INTO memories_fts(rowid, key, value)
+                    VALUES (new.id, new.key, new.value);
+                END;
+                CREATE TRIGGER IF NOT EXISTS memories_fts_ad AFTER DELETE ON memories BEGIN
+                    INSERT INTO memories_fts(memories_fts, rowid, key, value)
+                    VALUES ('delete', old.id, old.key, old.value);
+                END;
+                CREATE TRIGGER IF NOT EXISTS memories_fts_au AFTER UPDATE ON memories BEGIN
+                    INSERT INTO memories_fts(memories_fts, rowid, key, value)
+                    VALUES ('delete', old.id, old.key, old.value);
+                    INSERT INTO memories_fts(rowid, key, value)
+                    VALUES (new.id, new.key, new.value);
+                END;
+            """)
+            if not existed:
+                conn.execute("INSERT INTO memories_fts(memories_fts) VALUES ('rebuild')")
+        except sqlite3.OperationalError:
+            pass
         conn.commit()
 
 
