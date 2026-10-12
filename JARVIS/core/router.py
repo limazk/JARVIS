@@ -24,11 +24,11 @@ from core.intent import match_local_intent
 from core.permissions import PermissionDenied, PermissionManager
 from core.performance import measure
 from core.specialists import pick_specialist
-from personality.engine import PersonalityEngine
+from personality.engine import PersonalityEngine, parse_mode_command
 from personality.response import ResponseComposer
 from memory import conversations as conversation_log
 from memory import memory as long_term_memory
-from memory.database import log_activity
+from memory.database import get_connection, log_activity
 from tools.registry import ToolRegistry
 
 logger = logging.getLogger("jarvis.router")
@@ -114,6 +114,17 @@ class Router:
         except Exception:
             logger.warning("Não foi possível recuperar o resumo de conversas.", exc_info=True)
         self._persisted_summary = self.context.summary_text()
+        self.current_mode = "NORMAL"
+        try:
+            with get_connection() as conn:
+                row = conn.execute(
+                    "SELECT value FROM preferences WHERE key = 'personality_mode'"
+                ).fetchone()
+            if row:
+                PersonalityEngine(current_mode=row["value"])
+                self.current_mode = row["value"]
+        except Exception:
+            logger.warning("Modo salvo inválido; iniciando no NORMAL.", exc_info=True)
 
     @property
     def last_specialist(self) -> Optional[str]:
@@ -124,6 +135,22 @@ class Router:
         self.context.add("user", user_text)
         conversation_log.log_message("user", user_text)
         self._persist_summary()
+
+        requested_mode = parse_mode_command(user_text)
+        if requested_mode is not None:
+            self.current_mode = requested_mode
+            try:
+                with get_connection() as conn:
+                    conn.execute(
+                        "INSERT INTO preferences(key, value) VALUES('personality_mode', ?) "
+                        "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                        (requested_mode,),
+                    )
+            except Exception:
+                logger.warning("Não foi possível salvar o modo.", exc_info=True)
+            reply = f"Modo {requested_mode.lower()} ativado."
+            self._record_assistant(reply)
+            return RouterResult(reply=reply)
 
         # 1) Tenta o parser local primeiro (rápido, grátis, offline).
         with measure("routing_duration"):
@@ -136,7 +163,7 @@ class Router:
             #    tool-calling, o que fazer (conversar ou chamar uma tool).
             # Antes, busca na memória de longo prazo só o que for relevante
             # para esta pergunta (nunca manda o banco inteiro — seção 30).
-            system_prompt = _build_system_prompt(response_mode=response_mode)
+            system_prompt = _build_system_prompt(response_mode=response_mode, current_mode=self.current_mode)
             recap = self.context.summary_text()
             if recap:
                 system_prompt += (
@@ -201,6 +228,7 @@ class Router:
             user_text=user_text,
             response_mode=response_mode,
             local_intent=intent.matched and tool_name in _FAST_DIRECT_READ_TOOLS,
+            current_mode=self.current_mode,
         )
         self._record_assistant(result.reply)
         self._log_debug(user_text, tool_name, tool_input, result.reply, start)
