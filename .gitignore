@@ -13,6 +13,10 @@ logs/
 database/
 .spotify_cache/
 
+# Voz neural Piper: binário (~26MB) e modelo ONNX (~63MB) nunca versionados
+JARVIS/voice/piper_runtime/
+JARVIS/voice/models/
+
 # Python
 .venv/
 venv/

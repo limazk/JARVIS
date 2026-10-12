@@ -4,7 +4,8 @@ Text-to-Speech modular — seção 6 do spec.
 Mesma ideia do core/brain.py: uma interface comum (TTSProvider) com
 implementações trocáveis via TTS_PROVIDER no .env.
 
-    edge        -> Edge TTS (Microsoft, grátis, vozes neurais pt-BR) [padrão]
+    piper       -> neural pt-BR Faber offline (padrão, após setup)
+    edge        -> Edge TTS (Microsoft, serviço não-oficial)
     espeak      -> 100% offline no Linux (espeak-ng/espeak via WAV reproduzido no pygame)
     pyttsx3     -> fallback legado, qualidade robótica, pode falhar em Python recente
     elevenlabs  -> pago, melhor qualidade (precisa de ELEVENLABS_API_KEY)
@@ -64,6 +65,14 @@ class EdgeTTSProvider(TTSProvider):
         except Exception as exc:
             logger.error("Falha no Edge TTS: %s", exc)
             return None
+
+
+class PiperTTSProvider(TTSProvider):
+    """Interface do sintetizador Piper isolado da versão do Python."""
+
+    def synthesize(self, text: str) -> Optional[Path]:
+        from voice.piper_engine import synthesize_piper
+        return synthesize_piper(text)
 
 
 class EspeakProvider(TTSProvider):
@@ -148,21 +157,23 @@ class ElevenLabsProvider(TTSProvider):
 
 
 def get_tts_provider() -> TTSProvider:
-    providers = {"edge": EdgeTTSProvider, "espeak": EspeakProvider, "pyttsx3": Pyttsx3Provider, "elevenlabs": ElevenLabsProvider}
+    providers = {"piper": PiperTTSProvider, "edge": EdgeTTSProvider, "espeak": EspeakProvider, "pyttsx3": Pyttsx3Provider, "elevenlabs": ElevenLabsProvider}
     provider_cls = providers.get(settings.tts_provider, EdgeTTSProvider)
     return provider_cls()
 
 
 def speak(text: str, blocking: bool = True) -> None:
-    """
-    Sintetiza e toca a fala. Se o provedor configurado falhar, tenta os
-    próximos da cadeia de fallback: ElevenLabs (se configurado) -> Edge TTS
-    -> eSpeak offline (Linux) -> pyttsx3 legado. A disponibilidade do
-    eSpeak depende de instalação local e reprodução WAV pelo AudioPlayer. O Edge TTS é uma API não-oficial que a Microsoft
-    quebra de vez em quando (erro "403 Invalid response status" — nesse caso,
-    atualize o pacote com `pip install -U edge-tts`) — quando ele mesmo é o
-    provedor configurado e falha, pula direto pro pyttsx3 em vez de tentar o
-    Edge de novo.
+    """Fala com modelo Piper offline e fallback seguro.
+
+    Ordem:
+        piper      -> eSpeak -> pyttsx3
+        edge       -> Piper -> eSpeak -> pyttsx3
+        elevenlabs -> Piper -> Edge -> eSpeak -> pyttsx3
+        espeak     -> pyttsx3
+        pyttsx3    -> direto
+
+    Piper não gasta tokens/API nem baixa arquivos automaticamente. Instale
+    o modelo pt-BR com scripts/setup_piper_voice.py para obter voz neural.
     """
     from voice.audio_player import player
     from voice.formatting import prepare_speech
@@ -171,28 +182,43 @@ def speak(text: str, blocking: bool = True) -> None:
     if not text:
         return
 
-    provider = get_tts_provider()
-    audio_path = provider.synthesize(text)
+    primary = get_tts_provider()
+    if isinstance(primary, PiperTTSProvider):
+        sequence = [primary, EspeakProvider(), Pyttsx3Provider()]
+    elif isinstance(primary, ElevenLabsProvider):
+        sequence = [
+            primary, PiperTTSProvider(), EdgeTTSProvider(),
+            EspeakProvider(), Pyttsx3Provider(),
+        ]
+    elif isinstance(primary, EdgeTTSProvider):
+        sequence = [primary, PiperTTSProvider(), EspeakProvider(), Pyttsx3Provider()]
+    elif isinstance(primary, EspeakProvider):
+        sequence = [primary, Pyttsx3Provider()]
+    else:
+        sequence = [primary]
 
-    if audio_path is None and not isinstance(provider, (Pyttsx3Provider, EspeakProvider)):
-        if not isinstance(provider, EdgeTTSProvider):
-            logger.info("Provedor de TTS configurado falhou; tentando fallback Edge TTS.")
-            audio_path = EdgeTTSProvider().synthesize(text)
+    for provider in sequence:
+        try:
+            audio_path = provider.synthesize(text)
+        except Exception:
+            # Nunca interromper a interação inteira por um provedor de TTS.
+            logger.exception("Erro ao sintetizar com %s.", type(provider).__name__)
+            continue
 
         if audio_path is None:
-            logger.info("Edge TTS indisponível; tentando voz eSpeak local (Linux).")
-            audio_path = EspeakProvider().synthesize(text)
+            # pyttsx3 fala diretamente, sem um arquivo para reproduzir.
+            if isinstance(provider, Pyttsx3Provider):
+                return
+            continue
 
-        if audio_path is None:
-            logger.info("Voz eSpeak indisponível; tentando fallback pyttsx3.")
-            trace = current_trace()
-            if trace is not None:
-                trace.mark_elapsed("tts_start_duration")
-            Pyttsx3Provider().synthesize(text)
-            return
-
-    if audio_path is not None:
         trace = current_trace()
         if trace is not None:
             trace.mark_elapsed("tts_start_duration")
-        player.play(str(audio_path), blocking=blocking)
+        try:
+            player.play(str(audio_path), blocking=blocking)
+        except Exception:
+            logger.exception("Falha na reprodução da voz gerada por %s.", type(provider).__name__)
+            continue
+        return
+
+    logger.warning("Nenhum sintetizador de voz disponível para reproduzir a resposta.")
