@@ -50,13 +50,65 @@ Teste rápido: dentro de `JARVIS/`, execute
 tests/test_memory_v2.py tests/test_context_v2.py tests/test_response_composer.py
 tests/test_voice_formatting_v2.py`.
 
+### Piper neural brasileiro offline (Linux / Python 3.14)
+
+O JARVIS agora prioriza **Piper Faber medium**, uma voz neural
+pt-BR offline. O motor é um executável independente e por isso
+não requer instalar piper-tts no Python 3.14 do Kali.
+
+Instalação (uma vez com internet, Linux x86-64):
+
+~~~bash
+cd ~/JARVIS
+git pull --ff-only origin main
+source .venv/bin/activate
+cd JARVIS
+python scripts/setup_piper_voice.py
+~~~
+
+O instalador baixa o binário oficial de 2023 do projeto rhasspy/piper
+(~26 MB), a voz pt-BR Faber medium (~63 MB) e a configuração ONNX.
+Confere tamanho e SHA-256 do modelo (hash fixado no script). O pacote
+binário legado vem de GitHub HTTPS, mas não tem hash publicado nesta
+integração; avalie a origem antes de executar em máquinas sensíveis.
+O modelo e o binário ficam só no computador e são ignorados pelo Git.
+O dataset Faber tem licença CC0.
+
+Teste sem microfone, sem tokens de IA:
+
+~~~bash
+TTS_PROVIDER=piper python -c "from voice.text_to_speech import speak; speak('Olá, sou o Jarvis. Esta é minha nova voz brasileira.')"
+~~~
+
+Se você ouviu a nova voz, inicie:
+
+~~~bash
+TTS_PROVIDER=piper python main.py --voice
+~~~
+
+Para tornar permanente, mude o valor TTS_PROVIDER para piper no
+arquivo JARVIS/.env. A opção PIPER_BIN aceita o caminho para outro
+binário local e PIPER_MODEL o caminho para um modelo ONNX pt-BR.
+Instalador automático disponível para Linux x86-64; em outros sistemas,
+configure binário e modelo manualmente.
+
+**Fallback automático:** Piper -> eSpeak -> pyttsx3, de modo que uma
+falha do modelo neural não deixe o JARVIS mudo. Quando Edge é selecionado,
+a ordem é Edge -> Piper -> eSpeak -> pyttsx3. Nenhum download ocorre ao
+responder perguntas. O Piper CLI carrega o modelo a cada fala e pode
+ser mais lento no começo que um servidor Piper residente.
+
+**Fontes oficiais:**
+https://github.com/rhasspy/piper/releases/tag/2023.11.14-2
+https://huggingface.co/rhasspy/piper-voices/tree/main/pt/pt_BR/faber/medium
+
 ### Saída de voz no Linux (Edge TTS 403)
 
 Se o JARVIS imprime respostas como "Jarvis: São duas horas", mas não fala,
 o problema pode ser o Edge TTS (HTTP 403), não o reconhecimento de voz.
 O pyttsx3/eSpeak também pode apresentar erro de callback no Python 3.14.
 
-O modo de voz agora tenta **Edge TTS -> eSpeak local -> pyttsx3**.
+Quando Edge está selecionado, a ordem é **Edge -> Piper -> eSpeak -> pyttsx3**.
 Para instalar o sintetizador local (Kali, Ubuntu e Mint):
 
 ~~~bash
@@ -233,7 +285,7 @@ chaves de API direto no código — o `.env` nunca deve ser commitado (já está
 | `OLLAMA_KEEP_ALIVE` | `15m` | Quanto tempo o Ollama mantém o modelo carregado entre mensagens — evita ter que recarregar o modelo do disco a cada pausa |
 | `LLM_AUTO_FALLBACK` | `true` | Se `LLM_PROVIDER` falhar, cai sozinho pros gratuitos (Gemini→Groq→Ollama) |
 | `STT_PROVIDER` | `google` | `google` (grátis, online) \| `whisper` (local) |
-| `TTS_PROVIDER` | `edge` | `edge` (grátis) \| `pyttsx3` (offline) \| `elevenlabs` (pago) |
+| `TTS_PROVIDER` | `piper` | `piper` (neural offline) \| `edge` (online) \| `espeak` (offline) \| `pyttsx3` \| `elevenlabs` |
 | `EDGE_TTS_VOICE` | `pt-BR-AntonioNeural` | Voz do Edge TTS |
 | `ELEVENLABS_API_KEY` / `ELEVENLABS_VOICE_ID` | — | Só se `TTS_PROVIDER=elevenlabs` |
 | `OPENWEATHER_API_KEY` | — | Não é necessária (o padrão usa wttr.in, grátis, sem key) |
