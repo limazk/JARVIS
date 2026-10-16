@@ -6,7 +6,7 @@
 
 ---
 
-## 📌 Sobre o projeto
+##  Sobre o projeto
 
 **JARVIS** é um assistente pessoal desenvolvido para funcionar principalmente em **Linux**, com suporte a interação por voz, execução de comandos, uso de diferentes modelos de IA e integração com ferramentas externas.
 
@@ -16,28 +16,28 @@ O JARVIS utiliza uma arquitetura modular, permitindo adicionar novas IAs, ferram
 
 ---
 
-## ✨ Principais recursos
+##  Principais recursos
 
-- 🎙️ Interação por voz
-- 🗣️ Palavra de ativação do assistente
-- 🧠 Processamento com inteligência artificial
-- ⚡ Fast Router para comandos simples
-- 🤖 Integração com múltiplas IAs
-- 🧩 Sistema de plugins
-- 🔀 Orquestração inteligente através do **NEXUS**
-- 💻 Integração com ferramentas de programação
-- 🧠 Cache para reduzir chamadas desnecessárias de IA
-- 🔐 Controle de APIs e variáveis de ambiente
-- 📂 Execução de funções locais
-- 📊 Integração com o sistema ROTINA
-- 📝 Possibilidade de integração com Notion
-- 🐙 Integração com GitHub
-- 🔌 Estrutura preparada para novas ferramentas
-- 🐧 Desenvolvido principalmente para Linux
+-  Interação por voz
+-  Palavra de ativação do assistente
+-  Processamento com inteligência artificial
+-  Fast Router para comandos simples
+-  Integração com múltiplas IAs
+-  Sistema de plugins
+-  Orquestração inteligente através do **NEXUS**
+-  Integração com ferramentas de programação
+-  Cache para reduzir chamadas desnecessárias de IA
+-  Controle de APIs e variáveis de ambiente
+-  Execução de funções locais
+-  Integração com o sistema ROTINA
+-  Possibilidade de integração com Notion
+-  Integração com GitHub
+-  Estrutura preparada para novas ferramentas
+-  Desenvolvido principalmente para Linux
 
 ---
 
-## 🧠 Arquitetura
+##  Arquitetura
 
 A arquitetura simplificada é:
 
@@ -79,7 +79,7 @@ A arquitetura simplificada é:
 
 ---
 
-## 🔀 NEXUS
+##  NEXUS
 
 O **NEXUS** funciona como uma camada de orquestração entre o JARVIS e as ferramentas de inteligência artificial.
 
@@ -127,7 +127,7 @@ Essa arquitetura tem como objetivo:
 
 ---
 
-## 💻 Sistemas recomendados
+##  Sistemas recomendados
 
 O projeto foi desenvolvido principalmente para:
 
@@ -143,7 +143,7 @@ Também pode funcionar em outras distribuições Linux baseadas em Debian.
 
 ---
 
-## ⚙️ Requisitos
+##  Requisitos
 
 Recomendado:
 
@@ -167,7 +167,7 @@ pip3 --version
 
 ---
 
-# 🚀 Instalação no Linux
+#  Instalação no Linux
 
 ## 1. Atualizar o sistema
 
@@ -253,7 +253,7 @@ pip install -r requirements.txt
 
 ---
 
-# 🎤 Configuração do microfone
+#  Configuração do microfone
 
 Liste os dispositivos:
 
@@ -277,7 +277,7 @@ Se conseguir ouvir sua voz, o microfone está funcionando.
 
 ---
 
-# 🔊 Testar áudio do Linux
+#  Testar áudio do Linux
 
 Execute:
 
@@ -293,7 +293,7 @@ CTRL + C
 
 ---
 
-# 🔐 Configuração das APIs
+#  Configuração das APIs
 
 Nunca coloque chaves de API diretamente no código ou envie arquivos contendo chaves para o GitHub.
 
@@ -350,7 +350,7 @@ Você só precisa adicionar aquelas referentes às ferramentas que pretende util
 
 ---
 
-# ⚠️ Proteja o `.env`
+#  Proteja o `.env`
 
 Confirme que existe um `.gitignore`.
 
@@ -374,7 +374,7 @@ git add .env
 
 ---
 
-# 🤖 Codex
+#  Codex
 
 Caso o Codex CLI faça parte da instalação:
 
@@ -401,7 +401,7 @@ O NEXUS poderá utilizar o Codex principalmente para tarefas relacionadas a:
 
 ---
 
-# 🧠 Claude
+#  Claude
 
 Caso utilize Claude CLI ou API, ele poderá ser usado para:
 
@@ -416,7 +416,7 @@ O método de autenticação dependerá da implementação configurada no JARVIS.
 
 ---
 
-# 🌐 Grok
+#  Grok
 
 No projeto, o Grok pode ser utilizado como uma ferramenta auxiliar de interpretação e classificação.
 
@@ -434,7 +434,7 @@ categoria da tarefa
 
 ---
 
-# 🧠 Mistral
+#  Mistral
 
 O Mistral também pode atuar na camada de interpretação e roteamento.
 
@@ -442,7 +442,7 @@ O objetivo é evitar utilizar modelos mais caros para simplesmente identificar q
 
 ---
 
-# ▶️ Como iniciar o JARVIS
+#  Como iniciar o JARVIS
 
 Primeiro:
 
@@ -491,7 +491,7 @@ ls
 
 ---
 
-# 🎙️ Utilizando o JARVIS
+#  Utilizando o JARVIS
 
 Depois de iniciado, o sistema fica aguardando interação.
 
@@ -529,7 +529,7 @@ Jarvis, peça para o Codex corrigir esse código.
 
 ---
 
-# 💡 Fast Router
+#  Fast Router
 
 Nem todo comando precisa passar por um modelo de linguagem.
 
@@ -560,7 +560,7 @@ Isso melhora:
 
 ---
 
-# 💾 Cache
+#  Cache
 
 O JARVIS pode utilizar cache para evitar processamento repetitivo.
 
@@ -582,7 +582,7 @@ O cache pode utilizar TTL para evitar que informações antigas permaneçam inde
 
 ---
 
-# 📊 ROTINA
+#  ROTINA
 
 O sistema ROTINA pode ser integrado ao JARVIS para consultas relacionadas a informações pessoais registradas no sistema.
 
@@ -608,7 +608,7 @@ Com isso, não é necessário enviar toda consulta para um LLM.
 
 ---
 
-# 🧩 Plugins
+#  Plugins
 
 A arquitetura foi preparada para permitir integrações adicionais.
 
@@ -649,7 +649,7 @@ A estrutura real pode variar conforme a versão atual do projeto.
 
 ---
 
-# 📝 Notion
+#  Notion
 
 Para usar Notion através da API:
 
@@ -666,7 +666,7 @@ NOTION_TOKEN=seu_token
 
 ---
 
-# 🐙 GitHub
+#  GitHub
 
 O JARVIS também pode ser integrado ao GitHub para:
 
@@ -681,7 +681,7 @@ Nunca coloque tokens GitHub diretamente no código.
 
 ---
 
-# 🔄 Atualizando o JARVIS
+#  Atualizando o JARVIS
 
 Entre no diretório:
 
@@ -709,7 +709,7 @@ pip install -r requirements.txt
 
 ---
 
-# 🛑 Como desligar o JARVIS
+#  Como desligar o JARVIS
 
 Se estiver rodando diretamente no terminal:
 
@@ -745,7 +745,7 @@ Use `pkill` apenas quando tiver certeza de que deseja encerrar todos os processo
 
 ---
 
-# 🔎 Ver processos
+#  Ver processos
 
 ```bash
 ps aux | grep -i jarvis
@@ -759,7 +759,7 @@ ps aux | grep python
 
 ---
 
-# 🐛 Problemas comuns
+#  Problemas comuns
 
 ## `python: command not found`
 
@@ -881,7 +881,7 @@ source .venv/bin/activate
 
 ---
 
-# 🧹 Reinstalação limpa das dependências
+#  Reinstalação limpa das dependências
 
 Se estiver com muitos problemas:
 
@@ -901,7 +901,7 @@ pip install -r requirements.txt
 
 ---
 
-# 📥 Instalação resumida
+#  Instalação resumida
 
 Para usuários que já conhecem Linux:
 
@@ -942,7 +942,7 @@ e execute o inicializador da versão instalada.
 
 ---
 
-# 🔄 Instalar atualizações posteriormente
+#  Instalar atualizações posteriormente
 
 ```bash
 cd ~/JARVIS
@@ -956,7 +956,7 @@ pip install -r requirements.txt
 
 ---
 
-# 🗑️ Desinstalação
+#  Desinstalação
 
 Caso tenha instalado somente através do Git:
 
@@ -969,7 +969,7 @@ Dependências do sistema podem permanecer instaladas.
 
 ---
 
-# 🔐 Segurança
+#  Segurança
 
 Não envie para o GitHub:
 
@@ -994,7 +994,7 @@ Confira exatamente quais arquivos serão enviados.
 
 ---
 
-# 📂 Boas práticas
+#  Boas práticas
 
 Recomendado:
 
@@ -1018,32 +1018,8 @@ JARVIS
 
 ---
 
-# 🚀 Roadmap
 
-Algumas possíveis evoluções do projeto:
-
-- [ ] instalador automático;
-- [ ] atualização automática;
-- [ ] interface gráfica renovada;
-- [ ] site oficial de download;
-- [ ] pacote `.deb`;
-- [ ] AppImage;
-- [ ] gerenciamento visual das APIs;
-- [ ] painel do NEXUS;
-- [ ] histórico das decisões do orquestrador;
-- [ ] controle de consumo de tokens;
-- [ ] fallback automático entre IAs;
-- [ ] gerenciamento visual de plugins;
-- [ ] sistema de permissões;
-- [ ] sandbox para comandos;
-- [ ] modo offline;
-- [ ] sistema de memória melhorado;
-- [ ] inicialização automática com Linux;
-- [ ] instalador de um comando.
-
----
-
-# 🌐 Site de download
+#  Site de download
 
 Uma evolução planejada é disponibilizar um site próprio do JARVIS destinado principalmente a:
 
@@ -1057,7 +1033,7 @@ Uma evolução planejada é disponibilizar um site próprio do JARVIS destinado 
 
 ---
 
-# 🖥️ Interface
+#  Interface
 
 A interface do JARVIS poderá evoluir independentemente do núcleo do assistente.
 
@@ -1078,7 +1054,7 @@ Integrações
 
 ---
 
-# 🧪 Desenvolvimento
+#  Desenvolvimento
 
 Crie uma branch:
 
@@ -1096,7 +1072,7 @@ git push origin feature/nome-da-funcionalidade
 
 ---
 
-# 🤝 Contribuições
+#  Contribuições
 
 Contribuições devem preferencialmente:
 
@@ -1110,7 +1086,7 @@ Contribuições devem preferencialmente:
 
 ---
 
-# 📜 Licença
+#  Licença
 
 Defina uma licença antes de distribuir o software publicamente.
 
@@ -1127,7 +1103,7 @@ Se o objetivo for manter determinadas partes fechadas ou controlar distribuiçã
 
 ---
 
-# 👨‍💻 Autor
+#  Autor
 
 Projeto JARVIS
 
@@ -1137,7 +1113,7 @@ https://github.com/limazk/JARVIS
 
 ---
 
-# ⚡ JARVIS
+#  JARVIS
 
 > Um núcleo. Várias inteligências. A ferramenta certa para cada tarefa.
 
