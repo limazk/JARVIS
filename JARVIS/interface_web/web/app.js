@@ -529,6 +529,7 @@
   const BREADCRUMBS = {
     overview: '<span>PAINEL</span><span class="sep">///</span><span>DIAGNÓSTICO DO SISTEMA</span><span class="sep">|</span><span class="step now">OBSERVAR</span><span class="sep">&gt;</span><span class="step">ANALISAR</span><span class="sep">&gt;</span><span class="step">OTIMIZAR</span><span class="sep">&gt;</span><span class="step">EVOLUIR</span>',
     chat: '<span>PAINEL</span><span class="sep">///</span><span>CANAL DE COMUNICAÇÃO</span><span class="sep">|</span><span class="step">TEXTO</span><span class="sep">&gt;</span><span class="step now">VOZ</span><span class="sep">&gt;</span><span class="step">RESPOSTA</span>',
+    claude: '<span>PAINEL</span><span class="sep">///</span><span>CLAUDE MAX</span><span class="sep">|</span><span class="step now">MULTIABAS</span><span class="sep">&gt;</span><span class="step">SESSÕES INDEPENDENTES</span>',
   };
 
   function showPage(key) {

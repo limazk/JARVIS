@@ -69,6 +69,7 @@ class WebBridge:
         self._wake_detector = None
         self._wake_handling_lock = threading.Lock()
         self._tray = None
+        self._claude_tabs = None  # inicializado somente ao abrir a página Claude
 
         self.agent = JarvisAgent(confirm_callback=self._confirm_dialog, on_reminder_due=self._on_reminder_due)
 
@@ -134,6 +135,8 @@ class WebBridge:
         return True
 
     def shutdown(self) -> None:
+        if self._claude_tabs is not None:
+            self._claude_tabs.shutdown()
         if self._wake_detector is not None:
             self._wake_detector.stop()
             self._wake_detector = None
@@ -204,6 +207,32 @@ class WebBridge:
     def get_messages(self, since_id: int = 0) -> list[dict]:
         with self._lock:
             return [m for m in self._messages if m["id"] > since_id]
+
+    # ----- conversas paralelas com Claude Code Max (CLI, sem API key) -----
+
+    def _claude_service(self):
+        # Importação e inicialização lazy: indisponibilidade de Claude não
+        # impede abrir o restante do aplicativo e seu banco JARVIS.
+        with self._lock:
+            if self._claude_tabs is None:
+                from interface_web.claude_tabs import ClaudeTabs
+                self._claude_tabs = ClaudeTabs()
+            return self._claude_tabs
+
+    def claude_tabs_snapshot(self, tab_id: str | None = None) -> dict:
+        return self._claude_service().snapshot(tab_id)
+
+    def claude_tabs_create(self, title: str = "", model: str = "default") -> dict:
+        return self._claude_service().create(title, model)
+
+    def claude_tabs_rename(self, tab_id: str, title: str) -> dict:
+        return self._claude_service().rename(tab_id, title)
+
+    def claude_tabs_delete(self, tab_id: str) -> dict:
+        return self._claude_service().delete(tab_id)
+
+    def claude_tabs_send(self, tab_id: str, text: str) -> dict:
+        return self._claude_service().send(tab_id, text)
 
     # ----- chat -----
 
