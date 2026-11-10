@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Jarvis</title>
 <link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="claude_tabs.css" />
 </head>
 <body>
 <div id="app">
@@ -59,6 +60,10 @@
         <div class="icon-box">▤</div>
         <span class="uc">Conversa</span>
         <span class="nav-badge" id="chat-badge"></span>
+      </div>
+      <div class="nav-item" data-page="claude">
+        <div class="icon-box">✦</div>
+        <span class="uc">Claude</span>
       </div>
       <div class="sidebar-footer nav-item" id="settings-btn">
         <div class="icon-box">⚙</div>
@@ -306,6 +311,34 @@
           </div>
         </div>
       </div>
+      <!-- ---------- página: Claude Max — abas independentes ---------- -->
+      <div class="page" id="page-claude">
+        <section class="ct-shell">
+          <header class="ct-head">
+            <div>
+              <div class="ct-title">CLAUDE · MULTIABAS</div>
+              <div class="ct-sub">Sessões independentes com Claude Code e sua assinatura Max</div>
+            </div>
+            <div class="ct-actions">
+              <label for="claude-new-model" class="uc" style="font-size:9px;color:var(--text-dim)">Modelo</label>
+              <select id="claude-new-model" aria-label="Modelo para a próxima aba">
+                <option value="default">Automático</option>
+                <option value="sonnet">Sonnet</option>
+                <option value="opus">Opus</option>
+              </select>
+              <button type="button" class="ct-btn" id="claude-create">+ Nova aba</button>
+            </div>
+          </header>
+          <div id="claude-tabs" role="tablist" aria-label="Conversas Claude"></div>
+          <div id="claude-messages" role="log" aria-live="polite"></div>
+          <div class="ct-composer">
+            <textarea id="claude-input" rows="2" placeholder="Pergunte ao Claude... (Enter envia; Shift+Enter quebra linha)" aria-label="Mensagem para Claude"></textarea>
+            <button type="button" class="ct-btn" id="claude-send">Enviar</button>
+          </div>
+          <div id="claude-status" role="status">Inicializando...</div>
+          <div id="claude-tip">As conversas usam o Claude Code instalado localmente, sem salvar chaves de API.</div>
+        </section>
+      </div>
     </div>
   </div>
 
@@ -355,5 +388,6 @@
 </div>
 
 <script src="app.js"></script>
+<script src="claude_tabs.js"></script>
 </body>
 </html>
