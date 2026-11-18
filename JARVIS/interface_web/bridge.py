@@ -234,6 +234,9 @@ class WebBridge:
     def claude_tabs_send(self, tab_id: str, text: str) -> dict:
         return self._claude_service().send(tab_id, text)
 
+    def claude_tabs_cancel(self, tab_id: str) -> dict:
+        return self._claude_service().cancel(tab_id)
+
     # ----- chat -----
 
     def _append_message(self, speaker: str, text: str) -> dict:
