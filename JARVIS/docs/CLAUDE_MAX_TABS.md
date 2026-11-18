@@ -18,6 +18,27 @@ Cada aba possui uma sessão independente do Claude Code, seleção de modelo
 7. Escolha a opção de modelo antes de criar cada aba, envie mensagens e alterne
    entre sessões. A aba preserva o contexto pela opção --resume.
 
+## Telemetria e cancelamento (branch de melhoria)
+
+- Cada resposta bem-sucedida registra em `claude_tab_usage` os contadores de
+  tokens informados pelo JSON do Claude Code CLI, quando presentes.
+- São mostrados os totais desta aba, do dia (UTC), dos últimos 7 dias e de
+  todo o histórico registrado localmente.
+- A tela separa entrada, saída, leitura de cache e criação de cache; não
+  duplica `usage` e `modelUsage` na mesma chamada.
+- Chamadas anteriores à atualização e respostas do CLI sem `usage` /
+  `modelUsage` **não são estimadas**. Os números podem ser incompletos.
+- **Cota diária/semanal restante do Claude Max: indisponível.** O consumo
+  observado em tokens não equivale ao limite comercial da assinatura; a
+  interface não inventa porcentagem ou tempo restante. Nem as métricas
+  indicam cobrança extra na API.
+- O botão **Cancelar** envia término ao processo desta aba. As outras abas
+  continuam independentes. O encerramento pode levar alguns instantes.
+- O uso fica no mesmo SQLite local não criptografado. A exclusão de uma aba
+  também remove suas métricas locais, mas não apaga sessões próprias do CLI.
+- Ainda não há streaming de respostas nem execução de ferramentas nesta
+  interface. Continuam necessários testes reais com Claude Max e pywebview.
+
 ## Limitações e segurança
 
 - Usa Claude Code CLI (claude -p --output-format json), não incorpora o
@@ -47,8 +68,9 @@ Execute na subpasta JARVIS/ do repositório:
 
     python -m pytest -q tests/test_claude_tabs.py
 
-O teste usa CLI falso e não consome tokens do Max. Não é substituto para
-homologação visual e autenticação real.
+Os testes usam CLI falso e não consomem tokens do Max. Incluem persistência,
+telemetria, valores malformados e cancelamento de processos. Não substituem
+homologação visual e autenticação reais.
 
 ## Escopo e isolamento
 
