@@ -40,6 +40,7 @@ class ClaudeTabs:
         self._spawn = popen_factory or subprocess.Popen
         self._lock = threading.RLock()
         self._busy: set[str] = set()
+        self._cancelled: set[str] = set()
         self._processes: dict[str, subprocess.Popen] = {}
         self._closed = False
         self._init_schema()
@@ -70,8 +71,71 @@ class ClaudeTabs:
                 );
                 CREATE INDEX IF NOT EXISTS claude_tab_msg_lookup
                     ON claude_tab_messages(tab_id, id);
+                CREATE TABLE IF NOT EXISTS claude_tab_usage (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    tab_id TEXT NOT NULL REFERENCES claude_tabs(id) ON DELETE CASCADE,
+                    input_tokens INTEGER NOT NULL DEFAULT 0,
+                    output_tokens INTEGER NOT NULL DEFAULT 0,
+                    cache_read_tokens INTEGER NOT NULL DEFAULT 0,
+                    cache_creation_tokens INTEGER NOT NULL DEFAULT 0,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                );
+                CREATE INDEX IF NOT EXISTS claude_usage_tab_time
+                    ON claude_tab_usage(tab_id, created_at);
             """)
             conn.commit()
+
+    @staticmethod
+    def _token_count(value) -> int:
+        """Conservador: não inventar contagens a partir de dados malformados."""
+        return value if type(value) is int and 0 <= value <= 10**12 else 0
+
+    @classmethod
+    def _parse_usage(cls, payload: dict) -> dict | None:
+        """Suporta usage (snake_case) ou modelUsage (camelCase) do CLI."""
+        keys = {
+            "input_tokens": ("input_tokens", "inputTokens"),
+            "output_tokens": ("output_tokens", "outputTokens"),
+            "cache_read_tokens": ("cache_read_input_tokens", "cacheReadInputTokens"),
+            "cache_creation_tokens": ("cache_creation_input_tokens", "cacheCreationInputTokens"),
+        }
+        top = payload.get("usage")
+        if isinstance(top, dict) and any(pair[0] in top for pair in keys.values()):
+            return {target: cls._token_count(top.get(source[0]))
+                    for target, source in keys.items()}
+        models = payload.get("modelUsage")
+        if isinstance(models, dict):
+            records = [value for value in models.values() if isinstance(value, dict)]
+            if records and any(source[1] in record
+                               for record in records for source in keys.values()):
+                return {target: sum(cls._token_count(record.get(source[1]))
+                                    for record in records)
+                        for target, source in keys.items()}
+        return None
+
+    @staticmethod
+    def _usage_totals(conn: sqlite3.Connection, tab_id: str | None = None,
+                      period: str | None = None) -> dict:
+        filters = []
+        args = []
+        if tab_id is not None:
+            filters.append("tab_id = ?")
+            args.append(tab_id)
+        if period == "today":
+            filters.append("created_at >= date('now')")
+        elif period == "7d":
+            filters.append("created_at >= datetime('now', '-7 days')")
+        sql = """
+            SELECT COUNT(*) AS requests,
+                   COALESCE(SUM(input_tokens), 0) AS input_tokens,
+                   COALESCE(SUM(output_tokens), 0) AS output_tokens,
+                   COALESCE(SUM(cache_read_tokens), 0) AS cache_read_tokens,
+                   COALESCE(SUM(cache_creation_tokens), 0) AS cache_creation_tokens
+            FROM claude_tab_usage
+        """
+        if filters:
+            sql += " WHERE " + " AND ".join(filters)
+        return dict(conn.execute(sql, args).fetchone())
 
     def _tabs(self, conn: sqlite3.Connection) -> list[dict]:
         rows = conn.execute(
@@ -106,6 +170,14 @@ class ClaudeTabs:
                 "messages": messages,
                 "max_tabs": MAX_TABS,
                 "subscription_mode": True,
+                "usage": {
+                    "selected": self._usage_totals(conn, current) if current else self._usage_totals(conn, tab_id=""),
+                    "all_time": self._usage_totals(conn),
+                    "today": self._usage_totals(conn, period="today"),
+                    "last_7_days": self._usage_totals(conn, period="7d"),
+                    "daily_remaining": None,
+                    "weekly_remaining": None,
+                },
             }
 
     def create(self, title: str = "", model: str = "default") -> dict:
@@ -146,6 +218,20 @@ class ClaudeTabs:
             conn.commit()
             return {"ok": bool(cursor.rowcount), "error": "Aba não encontrada." if not cursor.rowcount else ""}
 
+    def cancel(self, tab_id: str) -> dict:
+        """Solicita interrupção apenas da aba ativa, sem afetar as demais."""
+        with self._lock:
+            if tab_id not in self._busy:
+                return {"ok": False, "error": "Esta aba não tem uma solicitação em execução."}
+            self._cancelled.add(tab_id)
+            proc = self._processes.get(tab_id)
+        if proc is not None:
+            try:
+                proc.terminate()
+            except OSError:
+                logger.warning("Falha ao solicitar cancelamento da aba %s", tab_id[:8])
+        return {"ok": True}
+
     def send(self, tab_id: str, text: str) -> dict:
         text = (text or "").strip()
         if not text or len(text) > MAX_PROMPT_CHARS:
@@ -181,11 +267,12 @@ class ClaudeTabs:
                 thread.start()
             except Exception:
                 self._busy.discard(tab_id)
+                self._cancelled.discard(tab_id)
                 raise
         return {"ok": True}
 
     def _invoke(self, tab_id: str, text: str, session_id: str | None,
-                model: str, binary: str) -> tuple[str, str]:
+                model: str, binary: str) -> tuple[str, str, dict | None]:
         # Não herdar a chave .env da API do Jarvis: com Claude Max o login da
         # assinatura deve ser usado, sem cobranças não intencionais na Console.
         env = os.environ.copy()
@@ -219,6 +306,8 @@ class ClaudeTabs:
                 proc.terminate()
                 raise RuntimeError("JARVIS está encerrando.")
             self._processes[tab_id] = proc
+            if tab_id in self._cancelled:
+                proc.terminate()
         try:
             try:
                 stdout, stderr = proc.communicate(timeout=TIMEOUT_SECONDS)
@@ -230,6 +319,9 @@ class ClaudeTabs:
             with self._lock:
                 self._processes.pop(tab_id, None)
 
+        with self._lock:
+            if tab_id in self._cancelled:
+                raise RuntimeError("Solicitação cancelada pelo usuário.")
         if proc.returncode != 0:
             detail = (stderr or stdout or "").lower()
             if any(term in detail for term in ("login", "auth", "not logged", "unauthorized")):
@@ -253,20 +345,25 @@ class ClaudeTabs:
             uuid.UUID(sid)
         except ValueError as exc:
             raise RuntimeError("Claude retornou um ID de sessão inesperado.") from exc
-        return answer[:MAX_REPLY_CHARS], sid
+        return answer[:MAX_REPLY_CHARS], sid, self._parse_usage(payload)
 
     def _worker(self, tab_id: str, text: str, session_id: str | None,
                 model: str, binary: str) -> None:
         role = "assistant"
         new_sid: str | None = None
+        usage: dict | None = None
         try:
-            content, new_sid = self._invoke(tab_id, text, session_id, model, binary)
+            content, new_sid, usage = self._invoke(tab_id, text, session_id, model, binary)
         except Exception as exc:  # nunca expor segredos nem derrubar a interface
             logger.warning("Claude tab %s falhou (%s)", tab_id[:8], type(exc).__name__)
             role = "error"
             content = str(exc) if isinstance(exc, RuntimeError) else "Falha inesperada ao consultar Claude."
         finally:
             with self._lock:
+                if tab_id in self._cancelled:
+                    role, content, new_sid, usage = (
+                        "error", "Solicitação cancelada pelo usuário.", None, None
+                    )
                 try:
                     with closing(self._connect()) as conn:
                         conn.execute(
@@ -278,10 +375,20 @@ class ClaudeTabs:
                                 "UPDATE claude_tabs SET session_id=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
                                 (new_sid, tab_id),
                             )
+                        if usage is not None and role == "assistant":
+                            conn.execute(
+                                """INSERT INTO claude_tab_usage(
+                                    tab_id, input_tokens, output_tokens,
+                                    cache_read_tokens, cache_creation_tokens
+                                ) VALUES(?, ?, ?, ?, ?)""",
+                                (tab_id, usage["input_tokens"], usage["output_tokens"],
+                                 usage["cache_read_tokens"], usage["cache_creation_tokens"]),
+                            )
                         conn.commit()
                 except sqlite3.Error:
                     logger.exception("Não foi possível persistir a resposta Claude.")
                 self._busy.discard(tab_id)
+                self._cancelled.discard(tab_id)
 
     def shutdown(self) -> None:
         with self._lock:
