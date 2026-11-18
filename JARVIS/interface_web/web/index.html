@@ -330,10 +330,12 @@
             </div>
           </header>
           <div id="claude-tabs" role="tablist" aria-label="Conversas Claude"></div>
+          <div id="claude-metrics" class="ct-metrics" aria-label="Consumo registrado de tokens pelo Claude CLI"></div>
           <div id="claude-messages" role="log" aria-live="polite"></div>
           <div class="ct-composer">
             <textarea id="claude-input" rows="2" placeholder="Pergunte ao Claude... (Enter envia; Shift+Enter quebra linha)" aria-label="Mensagem para Claude"></textarea>
             <button type="button" class="ct-btn" id="claude-send">Enviar</button>
+            <button type="button" class="ct-btn ct-btn-cancel" id="claude-cancel" disabled>Cancelar</button>
           </div>
           <div id="claude-status" role="status">Inicializando...</div>
           <div id="claude-tip">As conversas usam o Claude Code instalado localmente, sem salvar chaves de API.</div>
