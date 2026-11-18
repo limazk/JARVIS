@@ -12,12 +12,15 @@
     model: el("claude-new-model"),
     status: el("claude-status"),
     tip: el("claude-tip"),
+    metrics: el("claude-metrics"),
+    cancel: el("claude-cancel"),
   };
   if (!ui.page) return;
 
   let selected = null;
   let refreshPending = false;
   let lastMessagesKey = "";
+  let lastUsageKey = "";
   let initialized = false;
 
   const api = () => (window.pywebview && window.pywebview.api) || null;
@@ -119,6 +122,46 @@
     if (autoScroll || !first) ui.messages.scrollTop = ui.messages.scrollHeight;
   }
 
+  function renderUsage(usage) {
+    if (!ui.metrics) return;
+    const panels = [
+      ["ESTA ABA", usage.selected],
+      ["HOJE (UTC)", usage.today],
+      ["ÚLTIMOS 7 DIAS", usage.last_7_days],
+      ["TOTAL REGISTRADO", usage.all_time],
+    ];
+    const signature = JSON.stringify(panels);
+    if (signature === lastUsageKey) return;
+    lastUsageKey = signature;
+    ui.metrics.replaceChildren();
+    const fmt = (value) => Number(value || 0).toLocaleString("pt-BR");
+    panels.forEach(([label, data]) => {
+      const stats = data || {};
+      const tokenCount = (stats.input_tokens || 0) + (stats.output_tokens || 0)
+        + (stats.cache_read_tokens || 0) + (stats.cache_creation_tokens || 0);
+      const cell = document.createElement("div");
+      cell.className = "ct-metric";
+      const heading = document.createElement("div");
+      heading.className = "ct-metric-label";
+      heading.textContent = label;
+      const value = document.createElement("div");
+      value.className = "ct-metric-value";
+      value.textContent = fmt(tokenCount) + " tokens";
+      const detail = document.createElement("div");
+      detail.className = "ct-metric-detail";
+      detail.textContent = fmt(stats.requests) + " consultas · entrada "
+        + fmt(stats.input_tokens) + " · saída " + fmt(stats.output_tokens)
+        + " · cache L/E " + fmt(stats.cache_read_tokens)
+        + "/" + fmt(stats.cache_creation_tokens);
+      cell.append(heading, value, detail);
+      ui.metrics.appendChild(cell);
+    });
+    const info = document.createElement("div");
+    info.className = "ct-metric-note";
+    info.textContent = "Consumo registrado neste JARVIS. A cota restante diária/semanal do Claude Max não é fornecida por esta integração.";
+    ui.metrics.appendChild(info);
+  }
+
   async function refresh() {
     if (!api() || refreshPending || !ui.page.classList.contains("active")) return;
     refreshPending = true;
@@ -128,8 +171,10 @@
       selected = snap.selected_id;
       renderTabs(snap.tabs, selected, snap.max_tabs);
       renderMessages(snap.messages, selected);
+      renderUsage(snap.usage || {});
       const tab = snap.tabs.find((t) => t.id === selected);
       ui.send.disabled = !snap.installed || !selected || !!(tab && tab.busy);
+      ui.cancel.disabled = !selected || !(tab && tab.busy);
       ui.input.disabled = !snap.installed || !selected;
       ui.tip.textContent = snap.installed
         ? "Claude Code detectado. Use o login da assinatura Max no terminal; as abas não usam ANTHROPIC_API_KEY."
@@ -178,6 +223,18 @@
     }
   }
   ui.send.addEventListener("click", send);
+  ui.cancel.addEventListener("click", async () => {
+    if (!api() || !selected) return;
+    ui.cancel.disabled = true;
+    try {
+      const result = await api().claude_tabs_cancel(selected);
+      if (!result.ok) error(result.error);
+      else notice("Cancelamento solicitado. Aguardando encerramento do processo...");
+      refresh();
+    } catch (_err) {
+      error("Não foi possível cancelar a execução.");
+    }
+  });
   ui.input.addEventListener("keydown", (event) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
